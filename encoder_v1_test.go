@@ -63,7 +63,7 @@ func TestEncoderStateOneNextWithCommonInput(t *testing.T) {
 	}
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key:  'a',
 				dest: prev,
 			},
@@ -105,7 +105,7 @@ func TestEncoderStateOneNextWithUncommonInput(t *testing.T) {
 	}
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key:  0xff,
 				dest: prev,
 			},
@@ -145,7 +145,7 @@ func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 'a',
 				dest: &builderState{
 					offset: 32,
@@ -188,7 +188,7 @@ func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 0xff,
 				dest: &builderState{
 					offset: 32,
@@ -232,7 +232,7 @@ func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 'a',
 				dest: &builderState{
 					offset: 32,
@@ -277,7 +277,7 @@ func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 0xff,
 				dest: &builderState{
 					offset: 32,
@@ -323,19 +323,19 @@ func TestEncoderStateManyWithNoValues(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 'a',
 				dest: &builderState{
 					offset: 32,
 				},
 			},
-			&transition{
+			{
 				key: 'b',
 				dest: &builderState{
 					offset: 45,
 				},
 			},
-			&transition{
+			{
 				key: 'c',
 				dest: &builderState{
 					offset: 52,
@@ -383,21 +383,21 @@ func TestEncoderStateManyWithValues(t *testing.T) {
 
 	curr := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key: 'a',
 				dest: &builderState{
 					offset: 32,
 				},
 				val: 3,
 			},
-			&transition{
+			{
 				key: 'b',
 				dest: &builderState{
 					offset: 45,
 				},
 				val: 0,
 			},
-			&transition{
+			{
 				key: 'c',
 				dest: &builderState{
 					offset: 52,

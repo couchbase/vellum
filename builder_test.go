@@ -131,7 +131,7 @@ func TestBuilderStateHash(t *testing.T) {
 			&builderState{
 				final: true,
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
@@ -146,19 +146,19 @@ func TestBuilderStateHash(t *testing.T) {
 			&builderState{
 				final: true,
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 3,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 2,
@@ -195,11 +195,11 @@ func TestBuilderStateHasTransitions(t *testing.T) {
 			"some transitions",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key:  'a',
 						dest: &builderState{},
 					},
-					&transition{
+					{
 						key:  'b',
 						dest: &builderState{},
 					},
@@ -236,15 +236,15 @@ func TestBuilderStateFindTransition(t *testing.T) {
 			"some transitions, exists",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key:  'a',
 						dest: &builderState{},
 					},
-					&transition{
+					{
 						key:  'b',
 						dest: &builderState{},
 					},
-					&transition{
+					{
 						key:  'c',
 						dest: &builderState{},
 					},
@@ -257,15 +257,15 @@ func TestBuilderStateFindTransition(t *testing.T) {
 			"some transitions, does not exist",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key:  'a',
 						dest: &builderState{},
 					},
-					&transition{
+					{
 						key:  'b',
 						dest: &builderState{},
 					},
-					&transition{
+					{
 						key:  'c',
 						dest: &builderState{},
 					},
@@ -303,19 +303,19 @@ func TestBuilderStateTransitionFor(t *testing.T) {
 			"some transitions, exists",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -330,19 +330,19 @@ func TestBuilderStateTransitionFor(t *testing.T) {
 			"some transitions, does not exist",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -382,19 +382,19 @@ func TestBuilderStateReplaceTransition(t *testing.T) {
 			"some transitions, replacement exists",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -405,19 +405,19 @@ func TestBuilderStateReplaceTransition(t *testing.T) {
 			&transition{key: 'b', dest: &builderState{id: 5}},
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 5,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -430,19 +430,19 @@ func TestBuilderStateReplaceTransition(t *testing.T) {
 			"some transitions, does not exist",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -453,19 +453,19 @@ func TestBuilderStateReplaceTransition(t *testing.T) {
 			&transition{key: 'x', dest: &builderState{id: 5}},
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -501,19 +501,19 @@ func TestBuilderStateLastTransition(t *testing.T) {
 			"some transitions",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -558,7 +558,7 @@ func TestBuilderStateAddTransition(t *testing.T) {
 			},
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'x',
 						dest: &builderState{
 							id: 5,
@@ -571,19 +571,19 @@ func TestBuilderStateAddTransition(t *testing.T) {
 			"some transitions, replacement exists",
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
@@ -599,25 +599,25 @@ func TestBuilderStateAddTransition(t *testing.T) {
 			},
 			&builderState{
 				transitions: []*transition{
-					&transition{
+					{
 						key: 'a',
 						dest: &builderState{
 							id: 1,
 						},
 					},
-					&transition{
+					{
 						key: 'b',
 						dest: &builderState{
 							id: 2,
 						},
 					},
-					&transition{
+					{
 						key: 'c',
 						dest: &builderState{
 							id: 3,
 						},
 					},
-					&transition{
+					{
 						key: 'x',
 						dest: &builderState{
 							id: 5,
@@ -890,13 +890,13 @@ func TestBuilderStateEquiv(t *testing.T) {
 			&builderState{
 				final: true,
 				transitions: []*transition{
-					&transition{key: 'a', val: 7},
+					{key: 'a', val: 7},
 				},
 			},
 			&builderState{
 				final: true,
 				transitions: []*transition{
-					&transition{key: 'a', val: 9},
+					{key: 'a', val: 9},
 				},
 			},
 			false,

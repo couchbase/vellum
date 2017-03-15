@@ -23,15 +23,15 @@ func TestRegistry(t *testing.T) {
 
 	n1 := &builderState{
 		transitions: []*transition{
-			&transition{
+			{
 				key:  'a',
 				dest: &builderState{id: 1},
 			},
-			&transition{
+			{
 				key:  'b',
 				dest: &builderState{id: 2},
 			},
-			&transition{
+			{
 				key:  'c',
 				dest: &builderState{id: 3},
 			},
