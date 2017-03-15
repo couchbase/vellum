@@ -1,5 +1,6 @@
 # ![vellum](docs/logo.png) vellum
 
+[![Build Status](https://travis-ci.org/couchbaselabs/vellum.svg?branch=master)](https://travis-ci.org/couchbaselabs/vellum)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A Go library implementing an FST (finite state transducer) capable of:
