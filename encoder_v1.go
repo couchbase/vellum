@@ -179,7 +179,7 @@ func (e *encoderV1) encodeStateMany(s *builderState) error {
 	numTrans := encodeNumTrans(len(s.transitions))
 
 	// if number of transitions wont fit in edge header byte
-	// write out seperately
+	// write out separately
 	if numTrans == 0 {
 		if len(s.transitions) == 256 {
 			// this wouldnt fit in single byte, but reuse value 1

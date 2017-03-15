@@ -105,7 +105,7 @@ func TestRoundTripSimple(t *testing.T) {
 		t.Errorf("expected to not contain tuesd, but did")
 	}
 
-	// a few more misc non-existant values to increase coverage
+	// a few more misc non-existent values to increase coverage
 	if ok, _ := fst.Contains([]byte("x")); ok {
 		t.Errorf("expected to not contain x, but did")
 	}

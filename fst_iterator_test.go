@@ -270,7 +270,7 @@ func TestIteratorSeek(t *testing.T) {
 		t.Errorf("expected %v, got: %v", expect, got)
 	}
 
-	// similar but seek to somethign after thurs before tues
+	// similar but seek to something after thurs before tues
 	got = map[string]uint64{}
 	itr, err = fst.Iterator(nil, nil)
 	for err == nil {

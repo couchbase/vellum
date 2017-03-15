@@ -127,7 +127,7 @@ func (s *Builder) traverseInsert(key []byte, val uint64) (*builderState, uint64)
 				val = val - next.val
 			}
 
-			// push down adjustment to all decendents of the current dest
+			// push down adjustment to all descendants of the current dest
 			for j := range next.dest.transitions {
 				next.dest.transitions[j].val += adjustment
 			}
