@@ -1,0 +1,37 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/edsrzf/mmap-go",
+			"repository": "https://github.com/edsrzf/mmap-go",
+			"vcs": "git",
+			"revision": "935e0e8a636ca4ba70b713f3e38a19e1b77739e8",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/inconshreveable/mousetrap",
+			"repository": "https://github.com/inconshreveable/mousetrap",
+			"vcs": "git",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/spf13/cobra",
+			"repository": "https://github.com/spf13/cobra",
+			"vcs": "git",
+			"revision": "16c014f1a19d865b765b420e74508f80eb831ada",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/spf13/pflag",
+			"repository": "https://github.com/spf13/pflag",
+			"vcs": "git",
+			"revision": "9ff6c6923cfffbcd502984b8e0c80539a94968b7",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}
