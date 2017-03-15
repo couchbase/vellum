@@ -1,0 +1,17 @@
+sudo: false
+
+language: go
+
+go:
+ - 1.8
+
+script:
+  - go get github.com/kisielk/errcheck
+  - go test -v $(go list ./... | grep -v vendor/)
+  - go test -race
+  - go vet
+  - errcheck
+
+notifications:
+  email:
+    - marty.schoch@gmail.com
