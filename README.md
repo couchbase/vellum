@@ -113,11 +113,11 @@ A full example of the implementation is beyond the scope of this README, but let
 
 First we insert "are" with the value 4.
 
-![step1](docs/demo1.svg)
+![step1](docs/demo1.png)
 
 Next, we insert "ate" with the value 2.  
 
-![step2](docs/demo2.svg)
+![step2](docs/demo2.png)
 
 Notice how the values associated with the transitions were adjusted so that by summing them while traversing we still get the expected value.
 
@@ -125,13 +125,13 @@ At this point, we see that state 5 looks like state 3, and state 4 looks like st
 
 Now, we insert "see" with value 3.  Once it has been added, we now know that states 5 and 4 can longer change.  Since they are identical to 3 and 2, we replace them.
 
-![step3](docs/demo3.svg)
+![step3](docs/demo3.png)
 
 Again, we see that states 7 and 8 appear to be identical to 2 and 3.
 
 Having inserted our last key, we call `Close()` on the builder.
 
-![step4](docs/demo4.svg)
+![step4](docs/demo4.png)
 
 Now, states 7 and 8 can safely be replaced with 2 and 3.
 
