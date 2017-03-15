@@ -6,11 +6,14 @@ go:
  - 1.8
 
 script:
+  - go get github.com/mattn/goveralls
   - go get github.com/kisielk/errcheck
   - go test -v $(go list ./... | grep -v vendor/)
   - go test -race
   - go vet
   - errcheck
+  - go test -coverprofile=profile.out -covermode=count
+  - goveralls -service=travis-ci -coverprofile=profile.out -repotoken $COVERALLS
 
 notifications:
   email:
