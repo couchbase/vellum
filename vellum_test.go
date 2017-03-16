@@ -172,7 +172,7 @@ func TestRoundTripThousand(t *testing.T) {
 	for i := 0; i < len(dataset); i++ {
 		foundVal, ok := got[dataset[i]]
 		if !ok {
-			t.Fatalf("expected to find key, but didnt: %s", dataset[i])
+			t.Fatalf("expected to find key, but didn't: %s", dataset[i])
 		}
 
 		if foundVal != randomThousandVals[i] {

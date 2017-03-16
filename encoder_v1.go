@@ -182,7 +182,7 @@ func (e *encoderV1) encodeStateMany(s *builderState) error {
 	// write out separately
 	if numTrans == 0 {
 		if len(s.transitions) == 256 {
-			// this wouldnt fit in single byte, but reuse value 1
+			// this wouldn't fit in single byte, but reuse value 1
 			// which would have always fit in the edge header instead
 			err = e.bw.WriteByte(1)
 			if err != nil {

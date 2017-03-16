@@ -42,7 +42,7 @@ import (
 )
 
 // ErrOutOfOrder is returned when values are not inserted in
-// lexicogrpahic order.
+// lexicographic order.
 var ErrOutOfOrder = errors.New("values not inserted in lexicographic order")
 
 // ErrIteratorDone is returned by Iterator/Next/Seek methods when the

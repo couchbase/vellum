@@ -22,7 +22,7 @@ import (
 func TestDecoderVersionError(t *testing.T) {
 	_, err := loadDecoder(629, nil)
 	if err == nil {
-		t.Errorf("expected erorr loading decoder version 629, got nil")
+		t.Errorf("expected error loading decoder version 629, got nil")
 	}
 }
 

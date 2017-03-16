@@ -175,7 +175,7 @@ func (i *Iterator) next(lastOffset int) error {
 			i.valsStack = i.valsStack[:len(i.valsStack)-1]
 			continue
 		} else {
-			// stack len is 1 (root), can't go back furhter, we're done
+			// stack len is 1 (root), can't go back further, we're done
 			break
 		}
 
@@ -186,7 +186,7 @@ func (i *Iterator) next(lastOffset int) error {
 
 // Seek advances this iterator to the specified key/value pair.  If this key
 // is not in the FST, Current() will return the next largest key.  If this
-// seek opertion would go past the last key, or outside the configured
+// seek operation would go past the last key, or outside the configured
 // startKeyInclusive/endKeyExclusive then ErrIteratorDone is returned.
 func (i *Iterator) Seek(key []byte) error {
 	err := i.pointTo(key)

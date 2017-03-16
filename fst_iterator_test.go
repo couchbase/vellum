@@ -109,7 +109,7 @@ func TestIteratorStartKey(t *testing.T) {
 		t.Errorf("expected %v, got: %v", smallSample, got)
 	}
 
-	// with start key > "mon", we don't exptect to get it
+	// with start key > "mon", we don't expect to get it
 	expect := map[string]uint64{
 		"tues":  smallSample["tues"],
 		"thurs": smallSample["thurs"],
@@ -129,7 +129,7 @@ func TestIteratorStartKey(t *testing.T) {
 		t.Errorf("expected %v, got: %v", expect, got)
 	}
 
-	// with start key > "mon", we don't exptect to get it
+	// with start key > "mon", we don't expect to get it
 	expect = map[string]uint64{
 		"tues":  smallSample["tues"],
 		"thurs": smallSample["thurs"],
@@ -207,7 +207,7 @@ func TestIteratorEndKey(t *testing.T) {
 		t.Errorf("expected %v, got: %v", expect, got)
 	}
 
-	// with start key < "tye", we don't exptect to get it
+	// with start key < "tye", we don't expect to get it
 	got = map[string]uint64{}
 	itr, err = fst.Iterator(nil, []byte("tv"))
 	for err == nil {

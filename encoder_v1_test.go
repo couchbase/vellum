@@ -28,7 +28,7 @@ import (
 func TestEncoderVersionError(t *testing.T) {
 	_, err := loadEncoder(629, nil)
 	if err == nil {
-		t.Errorf("expected erorr loading encoder version 629, got nil")
+		t.Errorf("expected error loading encoder version 629, got nil")
 	}
 }
 
@@ -491,7 +491,7 @@ func testEncoderStateNTransitions(t *testing.T, n int) {
 	for i := 0; i < n; i++ {
 		want = append(want, 32)
 	}
-	// append transition keys (revesed)
+	// append transition keys (reversed)
 	for i := n - 1; i >= 0; i-- {
 		want = append(want, byte(i))
 	}

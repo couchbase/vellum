@@ -75,6 +75,6 @@ The footer is 16 bytes in total.
 
 ## Encoding Streaming
 
-States are written out to the underlying writer as soon as possible.  This is to get an early start on I/O while still building the FST, reducing the overall time to build, and it also allows us to reduce the memory consumed during the build process.
+States are written out to the underlying writer as soon as possible.  This allows us to get an early start on I/O while still building the FST, reducing the overall time to build, and it also allows us to reduce the memory consumed during the build process.
 
 Because of this, the root node will always be the last node written in the file.

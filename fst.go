@@ -132,7 +132,7 @@ func (f *FST) Iterator(startKeyInclusive, endKeyExclusive []byte) (*Iterator, er
 	return newIterator(f, startKeyInclusive, endKeyExclusive)
 }
 
-// DebugDump is only intended for debug purproses, it simply asks the underlying
+// DebugDump is only intended for debug purposes, it simply asks the underlying
 // decoder to output a debug representation to the provided Writer.
 func (f *FST) DebugDump(w io.Writer) error {
 	return f.decoder.debugDump(w)
