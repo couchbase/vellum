@@ -15,7 +15,6 @@
 package vellum
 
 import (
-	"encoding/binary"
 	"hash"
 	"hash/fnv"
 )
@@ -49,20 +48,23 @@ func (r *registry) entry(node *builderState) *builderState {
 	return rc.entry(node)
 }
 
+const fnvPrime = 1099511628211
+
 func (r *registry) hash(b *builderState) int {
-	r.hasher.Reset()
 	var final uint64
 	if b.final {
 		final = 1
 	}
-	_ = binary.Write(r.hasher, binary.LittleEndian, final)
-	_ = binary.Write(r.hasher, binary.LittleEndian, b.finalVal)
+
+	var h uint64 = 14695981039346656037
+	h ^= (final * fnvPrime)
+	h ^= (b.finalVal * fnvPrime)
 	for _, t := range b.transitions {
-		_ = binary.Write(r.hasher, binary.LittleEndian, t.key)
-		_ = binary.Write(r.hasher, binary.LittleEndian, t.val)
-		_ = binary.Write(r.hasher, binary.LittleEndian, t.dest)
+		h ^= (uint64(t.key) * fnvPrime)
+		h ^= (t.val * fnvPrime)
+		h ^= (uint64(t.dest.id) * fnvPrime)
 	}
-	return int(uint(r.hasher.Sum64()) % r.tableSize)
+	return int(h % uint64(r.tableSize))
 }
 
 type registryCache []*builderState
