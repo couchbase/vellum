@@ -37,6 +37,8 @@ type Builder struct {
 	lastVal   []byte
 	encoder   encoder
 	len       int
+
+	implicitFinal *builderState
 }
 
 // NewBuilder returns a new Builder which will stream out the
@@ -170,6 +172,25 @@ func (s *Builder) optimize(state *builderState) error {
 	err := s.optimize(lastTransition.dest)
 	if err != nil {
 		return err
+	}
+
+	// we don't want to waste a slot in the cache for the implicit final state
+	// instead, for now we track it explicitly.  this should be cleaned up
+	// further in the future, as all we really care is that the file offset
+	// becomes 0, but for now this is required.
+	if lastTransition.dest.final && !lastTransition.dest.hasTransitions() &&
+		lastTransition.dest.finalVal == 0 {
+
+		// the first time we've encountered this situation, remember the state
+		if s.implicitFinal == nil {
+			s.implicitFinal = lastTransition.dest
+			return nil
+		}
+
+		// replace ourselves with the implicit final state
+		state.replaceTransition(&transition{key: lastTransition.key, dest: s.implicitFinal, val: lastTransition.val})
+		s.nodeCount--
+		return nil
 	}
 
 	if equiv := s.registry.entry(lastTransition.dest); equiv != nil {
