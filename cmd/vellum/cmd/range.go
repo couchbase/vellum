@@ -24,10 +24,10 @@ import (
 var startKey []byte
 var endKey []byte
 
-var iterateCmd = &cobra.Command{
-	Use:   "iterate",
-	Short: "Iterates the contents of this vellum FST file",
-	Long:  `Iterates the contents of this vellum FST file.  You can optionally specify start/end keys after the filename.`,
+var rangeCmd = &cobra.Command{
+	Use:   "range",
+	Short: "Range iterates over the contents of this vellum FST file",
+	Long:  `Range iterates over the contents of this vellum FST file.  You can optionally specify start/end keys after the filename.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("path is required")
@@ -57,5 +57,5 @@ var iterateCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(iterateCmd)
+	RootCmd.AddCommand(rangeCmd)
 }
