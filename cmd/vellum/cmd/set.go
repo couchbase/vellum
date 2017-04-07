@@ -63,7 +63,8 @@ var setCmd = &cobra.Command{
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			err = b.Insert(scanner.Bytes(), 0)
+			word := append([]byte(nil), scanner.Bytes()...)
+			err = b.Insert(word, 0)
 			if err != nil {
 				return err
 			}
