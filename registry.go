@@ -57,12 +57,12 @@ func (r *registry) hash(b *builderState) int {
 	}
 
 	var h uint64 = 14695981039346656037
-	h ^= (final * fnvPrime)
-	h ^= (b.finalVal * fnvPrime)
+	h = (h ^ final) * fnvPrime
+	h = (h ^ b.finalVal) * fnvPrime
 	for _, t := range b.transitions {
-		h ^= (uint64(t.key) * fnvPrime)
-		h ^= (t.val * fnvPrime)
-		h ^= (uint64(t.dest.id) * fnvPrime)
+		h = (h ^ uint64(t.key)) * fnvPrime
+		h = (h ^ t.val) * fnvPrime
+		h = (h ^ uint64(t.dest.offset)) * fnvPrime
 	}
 	return int(h % uint64(r.tableSize))
 }
