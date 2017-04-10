@@ -20,22 +20,31 @@ import "bytes"
 // lexicographic order.  Iterators should be constructed with the Iterator
 // method on the parent FST structure.
 type Iterator struct {
-	f *FST
+	f   *FST
+	aut Automaton
 
 	startKeyInclusive []byte
 	endKeyExclusive   []byte
 
-	statesStack  []fstState
-	keysStack    []byte
-	keysPosStack []int
-	valsStack    []uint64
+	statesStack    []fstState
+	keysStack      []byte
+	keysPosStack   []int
+	valsStack      []uint64
+	autStatesStack []interface{}
 }
 
-func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte) (*Iterator, error) {
+func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
+	aut Automaton) (*Iterator, error) {
+
+	if aut == nil {
+		aut = &AlwaysMatch{}
+	}
+
 	rv := &Iterator{
 		f:                 f,
 		startKeyInclusive: startKeyInclusive,
 		endKeyExclusive:   endKeyExclusive,
+		aut:               aut,
 	}
 
 	err := rv.pointTo(startKeyInclusive)
@@ -64,17 +73,22 @@ func (i *Iterator) pointTo(key []byte) error {
 	i.keysStack = i.keysStack[:0]
 	i.keysPosStack = i.keysPosStack[:0]
 	i.valsStack = i.valsStack[:0]
+	i.autStatesStack = i.autStatesStack[:0]
 
 	root, err := i.f.decoder.stateAt(i.f.decoder.getRoot())
 	if err != nil {
 		return err
 	}
 
+	autStart := i.aut.Start()
+
 	maxQ := -1
 	// root is always part of the path
 	i.statesStack = append(i.statesStack, root)
+	i.autStatesStack = append(i.autStatesStack, autStart)
 	for j := 0; j < len(key); j++ {
 		curr := i.statesStack[len(i.statesStack)-1]
+		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
 
 		pos, nextAddr, nextVal := curr.TransitionFor(key[j])
 		if nextAddr < 0 {
@@ -87,6 +101,7 @@ func (i *Iterator) pointTo(key []byte) error {
 			}
 			break
 		}
+		autNext := i.aut.Accept(autCurr, key[j])
 
 		next, err := i.f.decoder.stateAt(nextAddr)
 		if err != nil {
@@ -97,10 +112,11 @@ func (i *Iterator) pointTo(key []byte) error {
 		i.keysStack = append(i.keysStack, key[j])
 		i.keysPosStack = append(i.keysPosStack, pos)
 		i.valsStack = append(i.valsStack, nextVal)
+		i.autStatesStack = append(i.autStatesStack, autNext)
 		continue
 	}
 
-	if !i.statesStack[len(i.statesStack)-1].Final() || bytes.Compare(i.keysStack, key) < 0 {
+	if !i.statesStack[len(i.statesStack)-1].Final() || !i.aut.IsMatch(i.autStatesStack[len(i.autStatesStack)-1]) || bytes.Compare(i.keysStack, key) < 0 {
 		return i.next(maxQ)
 	}
 
@@ -138,8 +154,10 @@ func (i *Iterator) next(lastOffset int) error {
 
 	for true {
 		curr := i.statesStack[len(i.statesStack)-1]
+		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
 
-		if curr.Final() && bytes.Compare(i.keysStack, start) > 0 {
+		if curr.Final() && i.aut.IsMatch(autCurr) &&
+			bytes.Compare(i.keysStack, start) > 0 {
 			// in final state greater than start key
 			return nil
 		}
@@ -147,25 +165,33 @@ func (i *Iterator) next(lastOffset int) error {
 		nextOffset := lastOffset + 1
 		if nextOffset < curr.NumTransitions() {
 			t := curr.TransitionAt(nextOffset)
-			pos, nextAddr, v := curr.TransitionFor(t)
-			// push onto stack
-			next, err := i.f.decoder.stateAt(nextAddr)
-			if err != nil {
-				return err
-			}
-			i.statesStack = append(i.statesStack, next)
-			i.keysStack = append(i.keysStack, t)
-			i.keysPosStack = append(i.keysPosStack, pos)
-			i.valsStack = append(i.valsStack, v)
-			lastOffset = -1
+			autNext := i.aut.Accept(autCurr, t)
+			if i.aut.CanMatch(autNext) {
+				pos, nextAddr, v := curr.TransitionFor(t)
+				// push onto stack
+				next, err := i.f.decoder.stateAt(nextAddr)
+				if err != nil {
+					return err
+				}
+				i.statesStack = append(i.statesStack, next)
+				i.keysStack = append(i.keysStack, t)
+				i.keysPosStack = append(i.keysPosStack, pos)
+				i.valsStack = append(i.valsStack, v)
+				i.autStatesStack = append(i.autStatesStack, autNext)
+				lastOffset = -1
 
-			// check to see if new keystack might have gone too far
-			if i.endKeyExclusive != nil && bytes.Compare(i.keysStack, i.endKeyExclusive) >= 0 {
-				return ErrIteratorDone
+				// check to see if new keystack might have gone too far
+				if i.endKeyExclusive != nil && bytes.Compare(i.keysStack, i.endKeyExclusive) >= 0 {
+					return ErrIteratorDone
+				}
+			} else {
+				lastOffset = nextOffset
 			}
 
 			continue
-		} else if len(i.statesStack) > 1 {
+		}
+
+		if len(i.statesStack) > 1 {
 			// no transitions, and still room to pop
 			i.statesStack = i.statesStack[:len(i.statesStack)-1]
 			i.keysStack = i.keysStack[:len(i.keysStack)-1]
@@ -173,6 +199,7 @@ func (i *Iterator) next(lastOffset int) error {
 
 			i.keysPosStack = i.keysPosStack[:len(i.keysPosStack)-1]
 			i.valsStack = i.valsStack[:len(i.valsStack)-1]
+			i.autStatesStack = i.autStatesStack[:len(i.autStatesStack)-1]
 			continue
 		} else {
 			// stack len is 1 (root), can't go back further, we're done

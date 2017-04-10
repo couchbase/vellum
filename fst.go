@@ -129,7 +129,14 @@ func (f *FST) Close() error {
 // Iterator returns a new Iterator capable of enumerating the key/value pairs
 // between the provided startKeyInclusive and endKeyExclusive.
 func (f *FST) Iterator(startKeyInclusive, endKeyExclusive []byte) (*Iterator, error) {
-	return newIterator(f, startKeyInclusive, endKeyExclusive)
+	return newIterator(f, startKeyInclusive, endKeyExclusive, nil)
+}
+
+// Search returns a new Iterator capable of enumerating the key/value pairs
+// between the provided startKeyInclusive and endKeyExclusive that also
+// satisfy the provided automaton.
+func (f *FST) Search(aut Automaton, startKeyInclusive, endKeyExclusive []byte) (*Iterator, error) {
+	return newIterator(f, startKeyInclusive, endKeyExclusive, aut)
 }
 
 // DebugDump is only intended for debug purposes, it simply asks the underlying

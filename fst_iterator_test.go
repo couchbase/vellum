@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+
+	"github.com/couchbaselabs/vellum/levenshtein"
 )
 
 func TestIterator(t *testing.T) {
@@ -452,5 +454,51 @@ func BenchmarkFSTIteratorAllInMem(b *testing.B) {
 			b.Fatalf("error closing FST: %v", err)
 		}
 
+	}
+}
+
+func TestFuzzySearch(t *testing.T) {
+	var buf bytes.Buffer
+	b, err := New(&buf, nil)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+
+	err = insertStringMap(b, smallSample)
+	if err != nil {
+		t.Fatalf("error building: %v", err)
+	}
+
+	err = b.Close()
+	if err != nil {
+		t.Fatalf("error closing: %v", err)
+	}
+
+	fst, err := Load(buf.Bytes())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+
+	fuzzy, err := levenshtein.NewLevenshtein("tue", 1)
+	if err != nil {
+		t.Fatalf("error building levenshtein automaton: %v", err)
+	}
+
+	want := map[string]uint64{
+		"tues": 3,
+		"tye":  99,
+	}
+	got := map[string]uint64{}
+	itr, err := fst.Search(fuzzy, nil, nil)
+	for err == nil {
+		key, val := itr.Current()
+		got[string(key)] = val
+		err = itr.Next()
+	}
+	if err != ErrIteratorDone {
+		t.Errorf("iterator error: %v", err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("expected %v, got: %v", want, got)
 	}
 }

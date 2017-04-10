@@ -18,24 +18,33 @@ import (
 	"fmt"
 
 	"github.com/couchbaselabs/vellum"
+	"github.com/couchbaselabs/vellum/levenshtein"
 	"github.com/spf13/cobra"
 )
 
-var startKey string
-var endKey string
+var query string
+var distance int
 
-var rangeCmd = &cobra.Command{
-	Use:   "range",
-	Short: "Range iterates over the contents of this vellum FST file",
-	Long:  `Range iterates over the contents of this vellum FST file.  You can optionally specify start/end keys after the filename.`,
+var fuzzyCmd = &cobra.Command{
+	Use:   "fuzzy",
+	Short: "Fuzzy runs a fuzzy query over the contents of this vellum FST file",
+	Long:  `Fuzzy runs a fuzzy query over the contents of this vellum FST file.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("path is required")
 		}
+		if len(args) > 1 {
+			query = args[1]
+		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fst, err := vellum.Open(args[0])
+		if err != nil {
+			return err
+		}
+		fuzzy, err := levenshtein.NewLevenshtein(query, distance)
 		if err != nil {
 			return err
 		}
@@ -46,7 +55,7 @@ var rangeCmd = &cobra.Command{
 		if endKey != "" {
 			endKeyB = []byte(endKey)
 		}
-		itr, err := fst.Iterator(startKeyB, endKeyB)
+		itr, err := fst.Search(fuzzy, startKeyB, endKeyB)
 		for err == nil {
 			key, val := itr.Current()
 			fmt.Printf("%s - %d\n", key, val)
@@ -58,7 +67,8 @@ var rangeCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(rangeCmd)
-	rangeCmd.Flags().StringVar(&startKey, "start", "", "start key inclusive")
-	rangeCmd.Flags().StringVar(&endKey, "end", "", "end key inclusive")
+	RootCmd.AddCommand(fuzzyCmd)
+	fuzzyCmd.Flags().StringVar(&startKey, "start", "", "start key inclusive")
+	fuzzyCmd.Flags().StringVar(&endKey, "end", "", "end key inclusive")
+	fuzzyCmd.Flags().IntVar(&distance, "distance", 1, "edit distance in Unicode codepoints")
 }
