@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/couchbaselabs/vellum/levenshtein"
+	"github.com/couchbaselabs/vellum/regexp"
 )
 
 func TestIterator(t *testing.T) {
@@ -490,6 +491,52 @@ func TestFuzzySearch(t *testing.T) {
 	}
 	got := map[string]uint64{}
 	itr, err := fst.Search(fuzzy, nil, nil)
+	for err == nil {
+		key, val := itr.Current()
+		got[string(key)] = val
+		err = itr.Next()
+	}
+	if err != ErrIteratorDone {
+		t.Errorf("iterator error: %v", err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("expected %v, got: %v", want, got)
+	}
+}
+
+func TestRegexpSearch(t *testing.T) {
+	var buf bytes.Buffer
+	b, err := New(&buf, nil)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+
+	err = insertStringMap(b, smallSample)
+	if err != nil {
+		t.Fatalf("error building: %v", err)
+	}
+
+	err = b.Close()
+	if err != nil {
+		t.Fatalf("error closing: %v", err)
+	}
+
+	fst, err := Load(buf.Bytes())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+
+	r, err := regexp.NewRegexp(`t.*s`)
+	if err != nil {
+		t.Fatalf("error building regexp automaton: %v", err)
+	}
+
+	want := map[string]uint64{
+		"thurs": 5,
+		"tues":  3,
+	}
+	got := map[string]uint64{}
+	itr, err := fst.Search(r, nil, nil)
 	for err == nil {
 		key, val := itr.Current()
 		got[string(key)] = val
