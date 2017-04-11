@@ -23,37 +23,37 @@ import (
 
 func TestUtf8Sequences(t *testing.T) {
 
-	want := Utf8Sequences{
-		Utf8Sequence{
-			&Utf8Range{0x0, 0x7f},
+	want := Sequences{
+		Sequence{
+			&Range{0x0, 0x7f},
 		},
-		Utf8Sequence{
-			&Utf8Range{0xc2, 0xdf},
-			&Utf8Range{0x80, 0xbf},
+		Sequence{
+			&Range{0xc2, 0xdf},
+			&Range{0x80, 0xbf},
 		},
-		Utf8Sequence{
-			&Utf8Range{0xe0, 0xe0},
-			&Utf8Range{0xa0, 0xbf},
-			&Utf8Range{0x80, 0xbf},
+		Sequence{
+			&Range{0xe0, 0xe0},
+			&Range{0xa0, 0xbf},
+			&Range{0x80, 0xbf},
 		},
-		Utf8Sequence{
-			&Utf8Range{0xe1, 0xec},
-			&Utf8Range{0x80, 0xbf},
-			&Utf8Range{0x80, 0xbf},
+		Sequence{
+			&Range{0xe1, 0xec},
+			&Range{0x80, 0xbf},
+			&Range{0x80, 0xbf},
 		},
-		Utf8Sequence{
-			&Utf8Range{0xed, 0xed},
-			&Utf8Range{0x80, 0x9f},
-			&Utf8Range{0x80, 0xbf},
+		Sequence{
+			&Range{0xed, 0xed},
+			&Range{0x80, 0x9f},
+			&Range{0x80, 0xbf},
 		},
-		Utf8Sequence{
-			&Utf8Range{0xee, 0xef},
-			&Utf8Range{0x80, 0xbf},
-			&Utf8Range{0x80, 0xbf},
+		Sequence{
+			&Range{0xee, 0xef},
+			&Range{0x80, 0xbf},
+			&Range{0x80, 0xbf},
 		},
 	}
 
-	got, err := NewUtf8Sequences(0, 0xffff)
+	got, err := NewSequences(0, 0xffff)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestCodepointsNoSurrogates(t *testing.T) {
 
 func neverAcceptsSurrogateCodepoints(start, end rune) error {
 	var buf = make([]byte, utf8.UTFMax)
-	sequences, err := NewUtf8Sequences(start, end)
+	sequences, err := NewSequences(start, end)
 	if err != nil {
 		return err
 	}

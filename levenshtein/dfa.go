@@ -157,7 +157,7 @@ func (b *dfaBuilder) addMismatchUtf8States(fromSi uint, levState []uint) (*uint,
 }
 
 func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromChar, toChar rune) error {
-	sequences, err := utf8.NewUtf8Sequences(fromChar, toChar)
+	sequences, err := utf8.NewSequences(fromChar, toChar)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromCha
 	return nil
 }
 
-func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to uint, rang *utf8.Utf8Range) {
+func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to uint, rang *utf8.Range) {
 	for by := rang.Start; by <= rang.End; by++ {
 		if overwrite || b.dfa.states[from].next[by] == nil {
 

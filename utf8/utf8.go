@@ -19,10 +19,13 @@ import (
 	"unicode/utf8"
 )
 
-type Utf8Sequences []Utf8Sequence
+// Sequences is a collection of Sequence
+type Sequences []Sequence
 
-func NewUtf8Sequences(start, end rune) (Utf8Sequences, error) {
-	var rv Utf8Sequences
+// NewSequences constructs a collection of Sequence which describe the
+// byte ranges covered between the start and end runes.
+func NewSequences(start, end rune) (Sequences, error) {
+	var rv Sequences
 
 	var rangeStack rangeStack
 	rangeStack = rangeStack.Push(&scalarRange{start, end})
@@ -53,7 +56,7 @@ TOP:
 			}
 			asciiRange := r.ascii()
 			if asciiRange != nil {
-				rv = append(rv, Utf8Sequence{
+				rv = append(rv, Sequence{
 					asciiRange,
 				})
 				rangeStack, r = rangeStack.Pop()
@@ -77,7 +80,7 @@ TOP:
 			start := make([]byte, utf8.UTFMax)
 			end := make([]byte, utf8.UTFMax)
 			n, m := r.encode(start, end)
-			seq, err := Utf8SequenceFromEncodedRange(start[0:n], end[0:m])
+			seq, err := SequenceFromEncodedRange(start[0:n], end[0:m])
 			if err != nil {
 				return nil, err
 			}
@@ -90,38 +93,40 @@ TOP:
 	return rv, nil
 }
 
-type Utf8Sequence []*Utf8Range
+// Sequence is a collection of *Range
+type Sequence []*Range
 
-// utf8SequenceFromEncodedRange creates utf-8 sequence from the encoded bytes
-func Utf8SequenceFromEncodedRange(start, end []byte) (Utf8Sequence, error) {
+// SequenceFromEncodedRange creates sequence from the encoded bytes
+func SequenceFromEncodedRange(start, end []byte) (Sequence, error) {
 	if len(start) != len(end) {
 		return nil, fmt.Errorf("byte slices must be the same length")
 	}
 	switch len(start) {
 	case 2:
-		return Utf8Sequence{
-			&Utf8Range{start[0], end[0]},
-			&Utf8Range{start[1], end[1]},
+		return Sequence{
+			&Range{start[0], end[0]},
+			&Range{start[1], end[1]},
 		}, nil
 	case 3:
-		return Utf8Sequence{
-			&Utf8Range{start[0], end[0]},
-			&Utf8Range{start[1], end[1]},
-			&Utf8Range{start[2], end[2]},
+		return Sequence{
+			&Range{start[0], end[0]},
+			&Range{start[1], end[1]},
+			&Range{start[2], end[2]},
 		}, nil
 	case 4:
-		return Utf8Sequence{
-			&Utf8Range{start[0], end[0]},
-			&Utf8Range{start[1], end[1]},
-			&Utf8Range{start[2], end[2]},
-			&Utf8Range{start[3], end[3]},
+		return Sequence{
+			&Range{start[0], end[0]},
+			&Range{start[1], end[1]},
+			&Range{start[2], end[2]},
+			&Range{start[3], end[3]},
 		}, nil
 	}
 
 	return nil, fmt.Errorf("invalid encoded byte length")
 }
 
-func (u Utf8Sequence) Matches(bytes []byte) bool {
+// Matches checks to see if the provided byte slice matches the Sequence
+func (u Sequence) Matches(bytes []byte) bool {
 	if len(bytes) < len(u) {
 		return false
 	}
@@ -133,7 +138,7 @@ func (u Utf8Sequence) Matches(bytes []byte) bool {
 	return true
 }
 
-func (u Utf8Sequence) String() string {
+func (u Sequence) String() string {
 	switch len(u) {
 	case 1:
 		return fmt.Sprintf("%v", u[0])
@@ -148,19 +153,20 @@ func (u Utf8Sequence) String() string {
 	}
 }
 
-type Utf8Range struct {
+// Range describes a single range of byte values
+type Range struct {
 	Start byte
 	End   byte
 }
 
-func (u Utf8Range) matches(b byte) bool {
+func (u Range) matches(b byte) bool {
 	if u.Start <= b && b <= u.End {
 		return true
 	}
 	return false
 }
 
-func (u Utf8Range) String() string {
+func (u Range) String() string {
 	if u.Start == u.End {
 		return fmt.Sprintf("[%X]", u.Start)
 	}
@@ -195,9 +201,9 @@ func (s *scalarRange) valid() bool {
 	return s.start <= s.end
 }
 
-func (s *scalarRange) ascii() *Utf8Range {
+func (s *scalarRange) ascii() *Range {
 	if s.valid() && s.end <= 0x7f {
-		return &Utf8Range{
+		return &Range{
 			Start: byte(s.start),
 			End:   byte(s.end),
 		}
