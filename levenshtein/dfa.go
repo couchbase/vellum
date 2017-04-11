@@ -17,6 +17,8 @@ package levenshtein
 import (
 	"fmt"
 	"unicode"
+
+	"github.com/couchbaselabs/vellum/utf8"
 )
 
 type dfa struct {
@@ -155,7 +157,7 @@ func (b *dfaBuilder) addMismatchUtf8States(fromSi uint, levState []uint) (*uint,
 }
 
 func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromChar, toChar rune) error {
-	sequences, err := newUtf8Sequences(fromChar, toChar)
+	sequences, err := utf8.NewUtf8Sequences(fromChar, toChar)
 	if err != nil {
 		return err
 	}
@@ -171,8 +173,8 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromCha
 	return nil
 }
 
-func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to uint, rang *utf8Range) {
-	for by := rang.start; by <= rang.end; by++ {
+func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to uint, rang *utf8.Utf8Range) {
+	for by := rang.Start; by <= rang.End; by++ {
 		if overwrite || b.dfa.states[from].next[by] == nil {
 
 			b.dfa.states[from].next[by] = &to

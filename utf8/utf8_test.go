@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package levenshtein
+package utf8
 
 import (
 	"fmt"
@@ -23,37 +23,37 @@ import (
 
 func TestUtf8Sequences(t *testing.T) {
 
-	want := utf8Sequences{
-		utf8Sequence{
-			&utf8Range{0x0, 0x7f},
+	want := Utf8Sequences{
+		Utf8Sequence{
+			&Utf8Range{0x0, 0x7f},
 		},
-		utf8Sequence{
-			&utf8Range{0xc2, 0xdf},
-			&utf8Range{0x80, 0xbf},
+		Utf8Sequence{
+			&Utf8Range{0xc2, 0xdf},
+			&Utf8Range{0x80, 0xbf},
 		},
-		utf8Sequence{
-			&utf8Range{0xe0, 0xe0},
-			&utf8Range{0xa0, 0xbf},
-			&utf8Range{0x80, 0xbf},
+		Utf8Sequence{
+			&Utf8Range{0xe0, 0xe0},
+			&Utf8Range{0xa0, 0xbf},
+			&Utf8Range{0x80, 0xbf},
 		},
-		utf8Sequence{
-			&utf8Range{0xe1, 0xec},
-			&utf8Range{0x80, 0xbf},
-			&utf8Range{0x80, 0xbf},
+		Utf8Sequence{
+			&Utf8Range{0xe1, 0xec},
+			&Utf8Range{0x80, 0xbf},
+			&Utf8Range{0x80, 0xbf},
 		},
-		utf8Sequence{
-			&utf8Range{0xed, 0xed},
-			&utf8Range{0x80, 0x9f},
-			&utf8Range{0x80, 0xbf},
+		Utf8Sequence{
+			&Utf8Range{0xed, 0xed},
+			&Utf8Range{0x80, 0x9f},
+			&Utf8Range{0x80, 0xbf},
 		},
-		utf8Sequence{
-			&utf8Range{0xee, 0xef},
-			&utf8Range{0x80, 0xbf},
-			&utf8Range{0x80, 0xbf},
+		Utf8Sequence{
+			&Utf8Range{0xee, 0xef},
+			&Utf8Range{0x80, 0xbf},
+			&Utf8Range{0x80, 0xbf},
 		},
 	}
 
-	got, err := newUtf8Sequences(0, 0xffff)
+	got, err := NewUtf8Sequences(0, 0xffff)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,14 +72,14 @@ func TestCodepointsNoSurrogates(t *testing.T) {
 
 func neverAcceptsSurrogateCodepoints(start, end rune) error {
 	var buf = make([]byte, utf8.UTFMax)
-	sequences, err := newUtf8Sequences(start, end)
+	sequences, err := NewUtf8Sequences(start, end)
 	if err != nil {
 		return err
 	}
 	for i := start; i < end; i++ {
 		n := utf8.EncodeRune(buf, i)
 		for _, seq := range sequences {
-			if seq.matches(buf[:n]) {
+			if seq.Matches(buf[:n]) {
 				return fmt.Errorf("utf8 seq: %v matches surrogate %d", seq, i)
 			}
 		}
