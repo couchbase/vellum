@@ -16,18 +16,25 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
+var expvarBind string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "vellum",
 	Short: "A utility to work with vellum FST files",
 	Long:  `A utility to work with vellum FST files.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if expvarBind != "" {
+			go http.ListenAndServe(expvarBind, nil)
+		}
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -37,4 +44,8 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+}
+
+func init() {
+	RootCmd.PersistentFlags().StringVar(&expvarBind, "expvar", "", "bind address for expvar, default none")
 }

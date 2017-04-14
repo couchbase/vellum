@@ -14,7 +14,11 @@
 
 package main
 
-import "github.com/couchbaselabs/vellum/cmd/vellum/cmd"
+import (
+	_ "expvar"
+
+	"github.com/couchbaselabs/vellum/cmd/vellum/cmd"
+)
 
 func main() {
 	cmd.Execute()
