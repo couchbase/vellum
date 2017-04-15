@@ -21,32 +21,38 @@ import "testing"
 func TestRegistry(t *testing.T) {
 	r := newRegistry(10, 1)
 
-	n1 := &builderState{
-		transitions: []*transition{
+	n1 := &builderNode{
+		trans: []*transition{
 			{
-				key:  'a',
-				dest: &builderState{id: 1},
+				in:   'a',
+				addr: 1,
 			},
 			{
-				key:  'b',
-				dest: &builderState{id: 2},
+				in:   'b',
+				addr: 2,
 			},
 			{
-				key:  'c',
-				dest: &builderState{id: 3},
+				in:   'c',
+				addr: 3,
 			},
 		},
 	}
 
 	// first look, doesn't exist
-	equiv := r.entry(n1)
-	if equiv != nil {
+	found, _, cell := r.entry(n1)
+	if found {
 		t.Errorf("expected empty registry to not have equivalent")
 	}
 
+	cell.addr = 276
+
 	// second look, does
-	equiv = r.entry(n1)
-	if equiv == nil {
+	var nowAddr int
+	found, nowAddr, _ = r.entry(n1)
+	if !found {
 		t.Errorf("expected to find equivalent after registering it")
+	}
+	if nowAddr != 276 {
+		t.Errorf("expected to get addr 276, got %d", nowAddr)
 	}
 }

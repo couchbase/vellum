@@ -19,8 +19,13 @@ import (
 	"hash/fnv"
 )
 
+type registryCell struct {
+	addr int
+	node *builderNode
+}
+
 type registry struct {
-	table     []*builderState
+	table     []registryCell
 	tableSize uint
 	mruSize   uint
 	hasher    hash.Hash64
@@ -29,7 +34,7 @@ type registry struct {
 func newRegistry(tableSize, mruSize int) *registry {
 	nsize := tableSize * mruSize
 	rv := &registry{
-		table:     make([]*builderState, nsize),
+		table:     make([]registryCell, nsize),
 		tableSize: uint(tableSize),
 		mruSize:   uint(mruSize),
 		hasher:    fnv.New64a(),
@@ -37,9 +42,9 @@ func newRegistry(tableSize, mruSize int) *registry {
 	return rv
 }
 
-func (r *registry) entry(node *builderState) *builderState {
+func (r *registry) entry(node *builderNode) (bool, int, *registryCell) {
 	if len(r.table) == 0 {
-		return nil
+		return false, 0, nil
 	}
 	bucket := r.hash(node)
 	start := r.mruSize * uint(bucket)
@@ -50,7 +55,7 @@ func (r *registry) entry(node *builderState) *builderState {
 
 const fnvPrime = 1099511628211
 
-func (r *registry) hash(b *builderState) int {
+func (r *registry) hash(b *builderNode) int {
 	var final uint64
 	if b.final {
 		final = 1
@@ -58,37 +63,37 @@ func (r *registry) hash(b *builderState) int {
 
 	var h uint64 = 14695981039346656037
 	h = (h ^ final) * fnvPrime
-	h = (h ^ b.finalVal) * fnvPrime
-	for _, t := range b.transitions {
-		h = (h ^ uint64(t.key)) * fnvPrime
-		h = (h ^ t.val) * fnvPrime
-		h = (h ^ uint64(t.dest.offset)) * fnvPrime
+	h = (h ^ b.finalOutput) * fnvPrime
+	for _, t := range b.trans {
+		h = (h ^ uint64(t.in)) * fnvPrime
+		h = (h ^ t.out) * fnvPrime
+		h = (h ^ uint64(t.addr)) * fnvPrime
 	}
 	return int(h % uint64(r.tableSize))
 }
 
-type registryCache []*builderState
+type registryCache []registryCell
 
-func (r registryCache) entry(node *builderState) *builderState {
+func (r registryCache) entry(node *builderNode) (bool, int, *registryCell) {
 	if len(r) == 1 {
-		cell := r[0]
-		if cell != nil && cell.equiv(node) {
-			return cell
+		if r[0].node != nil && r[0].node.equiv(node) {
+			return true, r[0].addr, nil
 		}
-		r[0] = node
-		return nil
+		r[0].node = node
+		return false, 0, &r[0]
 	}
-	for i, ent := range r {
-		if ent != nil && ent.equiv(node) {
+	for i := range r {
+		if r[i].node != nil && r[i].node.equiv(node) {
+			addr := r[i].addr
 			r.promote(i)
-			return ent
+			return true, addr, nil
 		}
 	}
 	// no match
 	last := len(r) - 1
-	r[last] = node // discard LRU
+	r[last].node = node // discard LRU
 	r.promote(last)
-	return nil
+	return false, 0, &r[0]
 
 }
 

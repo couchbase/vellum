@@ -41,7 +41,7 @@ func TestEncoderStart(t *testing.T) {
 
 	var buf bytes.Buffer
 	e := newEncoderV1(&buf)
-	err := e.start(nil)
+	err := e.start()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,14 +58,11 @@ func TestEncoderStart(t *testing.T) {
 
 func TestEncoderStateOneNextWithCommonInput(t *testing.T) {
 
-	prev := &builderState{
-		offset: 27,
-	}
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key:  'a',
-				dest: prev,
+				in:   'a',
+				addr: 27,
 			},
 		},
 	}
@@ -73,11 +70,8 @@ func TestEncoderStateOneNextWithCommonInput(t *testing.T) {
 	var buf bytes.Buffer
 	e := newEncoderV1(&buf)
 
-	// pretend we just wrote out the prev state
-	e.lastState = 27
-
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 27)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,14 +94,11 @@ func TestEncoderStateOneNextWithCommonInput(t *testing.T) {
 
 func TestEncoderStateOneNextWithUncommonInput(t *testing.T) {
 
-	prev := &builderState{
-		offset: 27,
-	}
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key:  0xff,
-				dest: prev,
+				in:   0xff,
+				addr: 27,
 			},
 		},
 	}
@@ -115,11 +106,8 @@ func TestEncoderStateOneNextWithUncommonInput(t *testing.T) {
 	var buf bytes.Buffer
 	e := newEncoderV1(&buf)
 
-	// pretend we just wrote out the prev state
-	e.lastState = 27
-
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 27)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,13 +131,11 @@ func TestEncoderStateOneNextWithUncommonInput(t *testing.T) {
 
 func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 'a',
-				dest: &builderState{
-					offset: 32,
-				},
+				in:   'a',
+				addr: 32,
 			},
 		},
 	}
@@ -161,7 +147,7 @@ func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,13 +172,11 @@ func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 
 func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 0xff,
-				dest: &builderState{
-					offset: 32,
-				},
+				in:   0xff,
+				addr: 32,
 			},
 		},
 	}
@@ -204,7 +188,7 @@ func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,14 +214,12 @@ func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 
 func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 'a',
-				dest: &builderState{
-					offset: 32,
-				},
-				val: 27,
+				in:   'a',
+				addr: 32,
+				out:  27,
 			},
 		},
 	}
@@ -249,7 +231,7 @@ func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,14 +257,12 @@ func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 
 func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 0xff,
-				dest: &builderState{
-					offset: 32,
-				},
-				val: 39,
+				in:   0xff,
+				addr: 32,
+				out:  39,
 			},
 		},
 	}
@@ -294,7 +274,7 @@ func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,25 +301,19 @@ func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 
 func TestEncoderStateManyWithNoValues(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 'a',
-				dest: &builderState{
-					offset: 32,
-				},
+				in:   'a',
+				addr: 32,
 			},
 			{
-				key: 'b',
-				dest: &builderState{
-					offset: 45,
-				},
+				in:   'b',
+				addr: 45,
 			},
 			{
-				key: 'c',
-				dest: &builderState{
-					offset: 52,
-				},
+				in:   'c',
+				addr: 52,
 			},
 		},
 	}
@@ -351,7 +325,7 @@ func TestEncoderStateManyWithNoValues(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,28 +355,22 @@ func TestEncoderStateManyWithNoValues(t *testing.T) {
 
 func TestEncoderStateManyWithValues(t *testing.T) {
 
-	curr := &builderState{
-		transitions: []*transition{
+	curr := &builderNode{
+		trans: []*transition{
 			{
-				key: 'a',
-				dest: &builderState{
-					offset: 32,
-				},
-				val: 3,
+				in:   'a',
+				addr: 32,
+				out:  3,
 			},
 			{
-				key: 'b',
-				dest: &builderState{
-					offset: 45,
-				},
-				val: 0,
+				in:   'b',
+				addr: 45,
+				out:  0,
 			},
 			{
-				key: 'c',
-				dest: &builderState{
-					offset: 52,
-				},
-				val: 7,
+				in:   'c',
+				addr: 52,
+				out:  7,
 			},
 		},
 	}
@@ -414,7 +382,7 @@ func TestEncoderStateManyWithValues(t *testing.T) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -455,15 +423,13 @@ func TestEncoderStateMoreTransitionsThanFitInHeader(t *testing.T) {
 
 func testEncoderStateNTransitions(t *testing.T, n int) {
 
-	curr := &builderState{
-		transitions: make([]*transition, n),
+	curr := &builderNode{
+		trans: make([]*transition, n),
 	}
 	for i := 0; i < n; i++ {
-		curr.transitions[i] = &transition{
-			key: byte(i),
-			dest: &builderState{
-				offset: 32,
-			},
+		curr.trans[i] = &transition{
+			in:   byte(i),
+			addr: 32,
 		}
 	}
 
@@ -474,7 +440,7 @@ func testEncoderStateNTransitions(t *testing.T, n int) {
 	e.bw.counter = 64
 
 	// now encode the curr state
-	err := e.encodeState(curr)
+	_, err := e.encodeState(curr, 64)
 	if err != nil {
 		t.Fatal(err)
 	}

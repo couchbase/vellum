@@ -26,9 +26,9 @@ type encoderConstructor func(w io.Writer) encoder
 var encoders = map[int]encoderConstructor{}
 
 type encoder interface {
-	start(s *Builder) error
-	encodeState(s *builderState) error
-	finish(s *Builder) error
+	start() error
+	encodeState(s *builderNode, addr int) (int, error)
+	finish(count, rootAddr int) error
 }
 
 func loadEncoder(ver int, w io.Writer) (encoder, error) {

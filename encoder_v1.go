@@ -33,18 +33,16 @@ func init() {
 }
 
 type encoderV1 struct {
-	bw        *writer
-	lastState int
+	bw *writer
 }
 
 func newEncoderV1(w io.Writer) *encoderV1 {
 	return &encoderV1{
-		bw:        newWriter(w),
-		lastState: -1,
+		bw: newWriter(w),
 	}
 }
 
-func (e *encoderV1) start(s *Builder) error {
+func (e *encoderV1) start() error {
 	header := make([]byte, headerSize)
 	binary.LittleEndian.PutUint64(header, versionV1)
 	binary.LittleEndian.PutUint64(header[8:], uint64(0)) // type
@@ -58,79 +56,77 @@ func (e *encoderV1) start(s *Builder) error {
 	return nil
 }
 
-func (e *encoderV1) encodeState(s *builderState) error {
-	if len(s.transitions) == 0 && s.final && s.finalVal == 0 {
-		return nil
-	} else if len(s.transitions) != 1 || s.final {
+func (e *encoderV1) encodeState(s *builderNode, lastAddr int) (int, error) {
+	if len(s.trans) == 0 && s.final && s.finalOutput == 0 {
+		return 0, nil
+	} else if len(s.trans) != 1 || s.final {
 		return e.encodeStateMany(s)
-	} else if !s.final && s.transitions[0].val == 0 && s.transitions[0].dest.offset == e.lastState {
+	} else if !s.final && s.trans[0].out == 0 && s.trans[0].addr == lastAddr {
 		return e.encodeStateOneFinish(s, transitionNext)
 	}
 	return e.encodeStateOne(s)
 }
 
-func (e *encoderV1) encodeStateOne(s *builderState) error {
+func (e *encoderV1) encodeStateOne(s *builderNode) (int, error) {
 	start := uint64(e.bw.counter)
 	outPackSize := 0
-	if s.transitions[0].val != 0 {
-		outPackSize = packedSize(s.transitions[0].val)
-		err := e.bw.WritePackedUintIn(s.transitions[0].val, outPackSize)
+	if s.trans[0].out != 0 {
+		outPackSize = packedSize(s.trans[0].out)
+		err := e.bw.WritePackedUintIn(s.trans[0].out, outPackSize)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
-	delta := deltaAddr(start, uint64(s.transitions[0].dest.offset))
+	delta := deltaAddr(start, uint64(s.trans[0].addr))
 	transPackSize := packedSize(delta)
 	err := e.bw.WritePackedUintIn(delta, transPackSize)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	packSize := encodePackSize(transPackSize, outPackSize)
 	err = e.bw.WriteByte(packSize)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	return e.encodeStateOneFinish(s, 0)
 }
 
-func (e *encoderV1) encodeStateOneFinish(s *builderState, next byte) error {
-	enc := encodeCommon(s.transitions[0].key)
+func (e *encoderV1) encodeStateOneFinish(s *builderNode, next byte) (int, error) {
+	enc := encodeCommon(s.trans[0].in)
 
 	// not a common input
 	if enc == 0 {
-		err := e.bw.WriteByte(s.transitions[0].key)
+		err := e.bw.WriteByte(s.trans[0].in)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 	err := e.bw.WriteByte(oneTransition | next | enc)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	s.offset = e.bw.counter - 1
-	e.lastState = s.offset
-	return nil
+	return e.bw.counter - 1, nil
 }
 
-func (e *encoderV1) encodeStateMany(s *builderState) error {
+func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
 	start := uint64(e.bw.counter)
 	transPackSize := 0
-	outPackSize := packedSize(s.finalVal)
-	anyOutputs := s.finalVal != 0
-	for i := range s.transitions {
-		delta := deltaAddr(start, uint64(s.transitions[i].dest.offset))
+	outPackSize := packedSize(s.finalOutput)
+	anyOutputs := s.finalOutput != 0
+	for i := range s.trans {
+		delta := deltaAddr(start, uint64(s.trans[i].addr))
 		tsize := packedSize(delta)
 		if tsize > transPackSize {
 			transPackSize = tsize
 		}
-		osize := packedSize(s.transitions[i].val)
+		osize := packedSize(s.trans[i].out)
 		if osize > outPackSize {
 			outPackSize = osize
 		}
-		anyOutputs = anyOutputs || s.transitions[i].val != 0
+		anyOutputs = anyOutputs || s.trans[i].out != 0
 	}
 	if !anyOutputs {
 		outPackSize = 0
@@ -139,59 +135,59 @@ func (e *encoderV1) encodeStateMany(s *builderState) error {
 	if anyOutputs {
 		// output final value
 		if s.final {
-			err := e.bw.WritePackedUintIn(s.finalVal, outPackSize)
+			err := e.bw.WritePackedUintIn(s.finalOutput, outPackSize)
 			if err != nil {
-				return err
+				return 0, err
 			}
 		}
 		// output transition values (in reverse)
-		for j := len(s.transitions) - 1; j >= 0; j-- {
-			err := e.bw.WritePackedUintIn(s.transitions[j].val, outPackSize)
+		for j := len(s.trans) - 1; j >= 0; j-- {
+			err := e.bw.WritePackedUintIn(s.trans[j].out, outPackSize)
 			if err != nil {
-				return err
+				return 0, err
 			}
 		}
 	}
 
 	// output transition dests (in reverse)
-	for j := len(s.transitions) - 1; j >= 0; j-- {
-		delta := deltaAddr(start, uint64(s.transitions[j].dest.offset))
+	for j := len(s.trans) - 1; j >= 0; j-- {
+		delta := deltaAddr(start, uint64(s.trans[j].addr))
 		err := e.bw.WritePackedUintIn(delta, transPackSize)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	// output transition keys (in reverse)
-	for j := len(s.transitions) - 1; j >= 0; j-- {
-		err := e.bw.WriteByte(s.transitions[j].key)
+	for j := len(s.trans) - 1; j >= 0; j-- {
+		err := e.bw.WriteByte(s.trans[j].in)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	packSize := encodePackSize(transPackSize, outPackSize)
 	err := e.bw.WriteByte(packSize)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	numTrans := encodeNumTrans(len(s.transitions))
+	numTrans := encodeNumTrans(len(s.trans))
 
 	// if number of transitions wont fit in edge header byte
 	// write out separately
 	if numTrans == 0 {
-		if len(s.transitions) == 256 {
+		if len(s.trans) == 256 {
 			// this wouldn't fit in single byte, but reuse value 1
 			// which would have always fit in the edge header instead
 			err = e.bw.WriteByte(1)
 			if err != nil {
-				return err
+				return 0, err
 			}
 		} else {
-			err = e.bw.WriteByte(byte(len(s.transitions)))
+			err = e.bw.WriteByte(byte(len(s.trans)))
 			if err != nil {
-				return err
+				return 0, err
 			}
 		}
 	}
@@ -202,19 +198,16 @@ func (e *encoderV1) encodeStateMany(s *builderState) error {
 	}
 	err = e.bw.WriteByte(numTrans)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	s.offset = e.bw.counter - 1
-	e.lastState = s.offset
-
-	return nil
+	return e.bw.counter - 1, nil
 }
 
-func (e *encoderV1) finish(s *Builder) error {
+func (e *encoderV1) finish(count, rootAddr int) error {
 	footer := make([]byte, footerSizeV1)
-	binary.LittleEndian.PutUint64(footer, uint64(s.len))             // root addr
-	binary.LittleEndian.PutUint64(footer[8:], uint64(s.root.offset)) // root addr
+	binary.LittleEndian.PutUint64(footer, uint64(count))        // root addr
+	binary.LittleEndian.PutUint64(footer[8:], uint64(rootAddr)) // root addr
 	n, err := e.bw.Write(footer)
 	if err != nil {
 		return err
