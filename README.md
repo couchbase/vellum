@@ -11,7 +11,7 @@ A Go library implementing an FST (finite state transducer) capable of:
   - enumerating keys in lexicographic order
 
 Some additional goals of this implementation:
- - bounded memory use while building the FST (in progress)
+ - bounded memory use while building the FST
  - streaming out FST data while building
  - mmap FST runtime to support very large FTSs (optional)
 
