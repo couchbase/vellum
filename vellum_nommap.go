@@ -23,6 +23,9 @@ func open(path string) (*FST, error) {
 	rv := &FST{
 		data: data,
 	}
+	if err != nil {
+		return nil, err
+	}
 	err = rv.initFST()
 	if err != nil {
 		return nil, err
