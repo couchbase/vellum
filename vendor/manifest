@@ -32,6 +32,14 @@
 			"revision": "9ff6c6923cfffbcd502984b8e0c80539a94968b7",
 			"branch": "master",
 			"notests": true
+		},
+		{
+			"importpath": "github.com/willf/bitset",
+			"repository": "https://github.com/willf/bitset",
+			"vcs": "git",
+			"revision": "5c3c0fce48842b2c0bbaa99b4e61b0175d84b47c",
+			"branch": "master",
+			"notests": true
 		}
 	]
 }

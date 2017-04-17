@@ -17,7 +17,6 @@ package vellum
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 )
 
 type decoderConstructor func([]byte) decoder
@@ -29,7 +28,6 @@ type decoder interface {
 	getRoot() int
 	getLen() int
 	stateAt(addr int) (fstState, error)
-	debugDump(w io.Writer) error
 }
 
 func loadDecoder(ver int, data []byte) (decoder, error) {

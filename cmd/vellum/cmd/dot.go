@@ -16,16 +16,17 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/couchbaselabs/vellum"
 	"github.com/spf13/cobra"
 )
 
-// dumpCmd represents the dump command
-var dumpCmd = &cobra.Command{
-	Use:   "dump",
-	Short: "Dumps the contents of this vellum FST file",
-	Long:  `Dumps the contents of this vellum FST file.`,
+var dotCmd = &cobra.Command{
+	Use:   "dot",
+	Short: "Dot prints the contents of this vellum FST file in the dot format",
+	Long:  `Dot prints the contents of this vellum FST file in the dot format.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("path is required")
@@ -37,15 +38,49 @@ var dumpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return fst.Debug(debugPrint)
+
+		return dotToWriter(fst, os.Stdout)
 	},
 }
 
-func debugPrint(n int, state interface{}) error {
-	fmt.Printf("%v\n", state)
+func dotToWriter(fst *vellum.FST, w io.Writer) error {
+	_, err := fmt.Fprint(w, dotHeader)
+	if err != nil {
+		return err
+	}
+	err = fst.Debug(func(n int, state interface{}) error {
+		if d, ok := state.(dotStringer); ok {
+			_, err = fmt.Fprintf(w, "%s", d.DotString(n))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprint(w, dotFooter)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+const dotHeader = `
+digraph automaton {
+    labelloc="l";
+    labeljust="l";
+    rankdir="LR";
+
+`
+const dotFooter = `}
+`
+
+type dotStringer interface {
+	DotString(int) string
+}
+
 func init() {
-	RootCmd.AddCommand(dumpCmd)
+	RootCmd.AddCommand(dotCmd)
 }

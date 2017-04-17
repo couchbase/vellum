@@ -14,7 +14,11 @@
 
 package vellum
 
-import "io"
+import (
+	"io"
+
+	"github.com/willf/bitset"
+)
 
 // FST is an in-memory representation of a finite state transducer,
 // capable of returning the uint64 value associated with
@@ -139,8 +143,48 @@ func (f *FST) Search(aut Automaton, startKeyInclusive, endKeyExclusive []byte) (
 	return newIterator(f, startKeyInclusive, endKeyExclusive, aut)
 }
 
-// DebugDump is only intended for debug purposes, it simply asks the underlying
-// decoder to output a debug representation to the provided Writer.
-func (f *FST) DebugDump(w io.Writer) error {
-	return f.decoder.debugDump(w)
+// Debug is only intended for debug purposes, it simply asks the underlying
+// decoder visit each state, and pass it to the provided callback.
+func (f *FST) Debug(callback func(int, interface{}) error) error {
+
+	addr := f.decoder.getRoot()
+	set := bitset.New(uint(addr))
+	stack := addrStack{addr}
+
+	stateNumber := 0
+	stack, addr = stack[:len(stack)-1], stack[len(stack)-1]
+	for addr != noneAddr {
+		if set.Test(uint(addr)) {
+			stack, addr = stack.Pop()
+			continue
+		}
+		set.Set(uint(addr))
+		state, err := f.decoder.stateAt(addr)
+		if err != nil {
+			return err
+		}
+		err = callback(stateNumber, state)
+		if err != nil {
+			return err
+		}
+		for i := 0; i < state.NumTransitions(); i++ {
+			tchar := state.TransitionAt(i)
+			_, dest, _ := state.TransitionFor(tchar)
+			stack = append(stack, dest)
+		}
+		stateNumber++
+		stack, addr = stack.Pop()
+	}
+
+	return nil
+}
+
+type addrStack []int
+
+func (a addrStack) Pop() (addrStack, int) {
+	l := len(a)
+	if l < 1 {
+		return a, noneAddr
+	}
+	return a[:l-1], a[l-1]
 }

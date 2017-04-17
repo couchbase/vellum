@@ -16,16 +16,19 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"os/exec"
 
 	"github.com/couchbaselabs/vellum"
 	"github.com/spf13/cobra"
 )
 
-// dumpCmd represents the dump command
-var dumpCmd = &cobra.Command{
-	Use:   "dump",
-	Short: "Dumps the contents of this vellum FST file",
-	Long:  `Dumps the contents of this vellum FST file.`,
+var svgCmd = &cobra.Command{
+	Use:   "svg",
+	Short: "SVG prints the contents of this vellum FST file in the SVG format",
+	Long:  `SVG prints the contents of this vellum FST file in the SVG format.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("path is required")
@@ -37,15 +40,30 @@ var dumpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return fst.Debug(debugPrint)
+
+		return svgToWriter(fst, os.Stdout)
 	},
 }
 
-func debugPrint(n int, state interface{}) error {
-	fmt.Printf("%v\n", state)
+func svgToWriter(fst *vellum.FST, w io.Writer) error {
+	pr, pw := io.Pipe()
+	go func() {
+		defer func() {
+			_ = pw.Close()
+		}()
+		_ = dotToWriter(fst, pw)
+	}()
+	cmd := exec.Command("dot", "-Tsvg")
+	cmd.Stdin = pr
+	cmd.Stdout = w
+	cmd.Stderr = ioutil.Discard
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func init() {
-	RootCmd.AddCommand(dumpCmd)
+	RootCmd.AddCommand(svgCmd)
 }

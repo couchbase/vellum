@@ -15,11 +15,10 @@
 package vellum
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
+	"strconv"
 )
 
 func init() {
@@ -67,28 +66,6 @@ func (d *decoderV1) stateAt(addr int) (fstState, error) {
 		return nil, err
 	}
 	return &state, nil
-}
-
-func (d *decoderV1) debugDump(w io.Writer) error {
-	bw := bufio.NewWriter(w)
-	_, err := bw.WriteString(fmt.Sprintf("Root: %d (%#x)\n\n", d.root, d.root))
-	if err != nil {
-		return err
-	}
-	var state fstStateV1
-	curr := int(d.root)
-	for curr > 15 {
-		err := state.at(d.data, curr)
-		if err != nil {
-			return err
-		}
-		_, err = bw.WriteString(fmt.Sprintf("%s\n", &state))
-		if err != nil {
-			return err
-		}
-		curr = state.bottom - 1
-	}
-	return bw.Flush()
 }
 
 type fstStateV1 struct {
@@ -142,6 +119,8 @@ func (f *fstStateV1) at(data []byte, addr int) error {
 }
 
 func (f *fstStateV1) atZero() error {
+	f.top = 0
+	f.bottom = 1
 	f.numTrans = 0
 	f.final = true
 	f.outFinal = 0
@@ -292,4 +271,31 @@ func (f *fstStateV1) String() string {
 		rv += "\n"
 	}
 	return rv
+}
+
+func (f *fstStateV1) DotString(num int) string {
+	rv := ""
+	label := fmt.Sprintf("%d", num)
+	final := ""
+	if f.final {
+		final = ",peripheries=2"
+	}
+	rv += fmt.Sprintf("    %d [label=\"%s\"%s];\n", f.top, label, final)
+
+	for i := 0; i < f.numTrans; i++ {
+		transChar := f.TransitionAt(i)
+		_, transDest, transOut := f.TransitionFor(transChar)
+		out := ""
+		if transOut != 0 {
+			out = fmt.Sprintf("/%d", transOut)
+		}
+		rv += fmt.Sprintf("    %d -> %d [label=\"%s%s\"];\n", f.top, transDest, escapeInput(transChar), out)
+	}
+
+	return rv
+}
+
+func escapeInput(b byte) string {
+	x := strconv.AppendQuoteRune(nil, rune(b))
+	return string(x[1:(len(x) - 1)])
 }
