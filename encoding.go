@@ -17,11 +17,33 @@ package vellum
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
+const headerSize = 16
+
+type encoderConstructor func(w io.Writer) encoder
 type decoderConstructor func([]byte) decoder
 
+var encoders = map[int]encoderConstructor{}
 var decoders = map[int]decoderConstructor{}
+
+type encoder interface {
+	start() error
+	encodeState(s *builderNode, addr int) (int, error)
+	finish(count, rootAddr int) error
+}
+
+func loadEncoder(ver int, w io.Writer) (encoder, error) {
+	if cons, ok := encoders[ver]; ok {
+		return cons(w), nil
+	}
+	return nil, fmt.Errorf("no encoder for version %d registered", ver)
+}
+
+func registerEncoder(ver int, cons encoderConstructor) {
+	encoders[ver] = cons
+}
 
 type decoder interface {
 	start(f *FST) error

@@ -15,11 +15,17 @@
 package vellum
 
 import (
+	"bufio"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"sort"
 	"testing"
 )
+
+func init() {
+	thousandTestWords, _ = loadWords("data/words-1000.txt")
+}
 
 // this simple test case only has a shared final state
 // it also tests out of order insert
@@ -194,6 +200,33 @@ func TestBuilderNodeEquiv(t *testing.T) {
 		})
 	}
 }
+
+func loadWords(path string) ([]string, error) {
+	var rv []string
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		word := append([]byte(nil), scanner.Bytes()...)
+		rv = append(rv, string(word))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return rv, nil
+}
+
+var thousandTestWords []string
 
 func BenchmarkBuilder(b *testing.B) {
 	dataset := thousandTestWords
