@@ -53,23 +53,22 @@ func NewLevenshtein(query string, distance int) (*Levenshtein, error) {
 }
 
 // Start returns the start state of this automaton.
-func (l *Levenshtein) Start() interface{} {
-	var zero uint
-	return &zero
+func (l *Levenshtein) Start() int {
+	return 1
 }
 
 // IsMatch returns if the specified state is a matching state.
-func (l *Levenshtein) IsMatch(s interface{}) bool {
-	if state, ok := s.(*uint); ok {
-		return l.dfa.states[*state].match
+func (l *Levenshtein) IsMatch(s int) bool {
+	if s < len(l.dfa.states) {
+		return l.dfa.states[s].match
 	}
 	return false
 }
 
 // CanMatch returns if the specified state can ever transition to a matching
 // state.
-func (l *Levenshtein) CanMatch(s interface{}) bool {
-	if s != nil {
+func (l *Levenshtein) CanMatch(s int) bool {
+	if s < len(l.dfa.states) && s > 0 {
 		return true
 	}
 	return false
@@ -77,20 +76,15 @@ func (l *Levenshtein) CanMatch(s interface{}) bool {
 
 // WillAlwaysMatch returns if the specified state will always end in a
 // matching state.
-func (l *Levenshtein) WillAlwaysMatch(s interface{}) bool {
+func (l *Levenshtein) WillAlwaysMatch(s int) bool {
 	return false
 }
 
 // Accept returns the new state, resulting from the transite byte b
 // when currently in the state s.
-func (l *Levenshtein) Accept(s interface{}, b byte) interface{} {
-	if state, ok := s.(*uint); ok {
-		next := l.dfa.states[*state].next[b]
-
-		if next == nil {
-			return nil
-		}
-		return next
+func (l *Levenshtein) Accept(s int, b byte) int {
+	if s < len(l.dfa.states) {
+		return l.dfa.states[s].next[b]
 	}
-	return nil
+	return 0
 }

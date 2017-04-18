@@ -34,13 +34,13 @@ func (s statesStack) Push(v *state) statesStack {
 	return append(s, v)
 }
 
-type uintsStack [][]uint
+type intsStack [][]int
 
-func (s uintsStack) Push(v []uint) uintsStack {
+func (s intsStack) Push(v []int) intsStack {
 	return append(s, v)
 }
 
-func (s uintsStack) Pop() (uintsStack, []uint) {
+func (s intsStack) Pop() (intsStack, []int) {
 	l := len(s)
 	if l < 1 {
 		return s, nil

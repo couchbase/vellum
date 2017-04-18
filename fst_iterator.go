@@ -30,7 +30,7 @@ type Iterator struct {
 	keysStack      []byte
 	keysPosStack   []int
 	valsStack      []uint64
-	autStatesStack []interface{}
+	autStatesStack []int
 }
 
 func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,

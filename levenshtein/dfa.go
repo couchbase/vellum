@@ -26,7 +26,7 @@ type dfa struct {
 }
 
 type state struct {
-	next  []*uint
+	next  []int
 	match bool
 }
 
@@ -40,8 +40,8 @@ func (s *state) String() string {
 		if i%16 == 0 {
 			rv += fmt.Sprintf("%x |", i/16)
 		}
-		if s.next[i] != nil {
-			rv += fmt.Sprintf("% 5d", *s.next[i])
+		if s.next[i] != 0 {
+			rv += fmt.Sprintf("% 5d", s.next[i])
 		} else {
 			rv += "    -"
 		}
@@ -55,54 +55,56 @@ func (s *state) String() string {
 type dfaBuilder struct {
 	dfa   *dfa
 	lev   *dynamicLevenshtein
-	cache map[string]uint
+	cache map[string]int
 }
 
 func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
-	return &dfaBuilder{
+	dfab := &dfaBuilder{
 		dfa: &dfa{
 			states: make([]*state, 0, 16),
 		},
 		lev:   lev,
-		cache: make(map[string]uint, 1024),
+		cache: make(map[string]int, 1024),
 	}
+	dfab.newState(false) // create state 0, invalid
+	return dfab
 }
 
 func (b *dfaBuilder) build() (*dfa, error) {
-	var stack uintsStack
+	var stack intsStack
 	stack = stack.Push(b.lev.start())
-	seen := make(map[uint]struct{})
+	seen := make(map[int]struct{})
 
-	var levState []uint
+	var levState []int
 	stack, levState = stack.Pop()
 	for levState != nil {
 		dfaSi := b.cachedState(levState)
-		mmToSi, mmMismatchState, err := b.addMismatchUtf8States(*dfaSi, levState)
+		mmToSi, mmMismatchState, err := b.addMismatchUtf8States(dfaSi, levState)
 		if err != nil {
 			return nil, err
 		}
-		if mmToSi != nil {
-			if _, ok := seen[*mmToSi]; !ok {
-				seen[*mmToSi] = struct{}{}
+		if mmToSi != 0 {
+			if _, ok := seen[mmToSi]; !ok {
+				seen[mmToSi] = struct{}{}
 				stack = stack.Push(mmMismatchState)
 			}
 		}
 
 		i := 0
 		for _, r := range b.lev.query {
-			if levState[i] > b.lev.distance {
+			if uint(levState[i]) > b.lev.distance {
 				i++
 				continue
 			}
 			levNext := b.lev.accept(levState, &r)
 			nextSi := b.cachedState(levNext)
-			if nextSi != nil {
-				err = b.addUtf8Sequences(true, *dfaSi, *nextSi, r, r)
+			if nextSi != 0 {
+				err = b.addUtf8Sequences(true, dfaSi, nextSi, r, r)
 				if err != nil {
 					return nil, err
 				}
-				if _, ok := seen[*nextSi]; !ok {
-					seen[*nextSi] = struct{}{}
+				if _, ok := seen[nextSi]; !ok {
+					seen[nextSi] = struct{}{}
 					stack = stack.Push(levNext)
 				}
 			}
@@ -119,44 +121,44 @@ func (b *dfaBuilder) build() (*dfa, error) {
 	return b.dfa, nil
 }
 
-func (b *dfaBuilder) cachedState(levState []uint) *uint {
+func (b *dfaBuilder) cachedState(levState []int) int {
 	rv, _ := b.cached(levState)
 	return rv
 }
 
-func (b *dfaBuilder) cached(levState []uint) (*uint, bool) {
+func (b *dfaBuilder) cached(levState []int) (int, bool) {
 	if !b.lev.canMatch(levState) {
-		return nil, true
+		return 0, true
 	}
 	k := fmt.Sprintf("%v", levState)
 	v, ok := b.cache[k]
 	if ok {
-		return &v, true
+		return v, true
 	}
 	match := b.lev.isMatch(levState)
 	b.dfa.states = b.dfa.states.Push(&state{
-		next:  make([]*uint, 256),
+		next:  make([]int, 256),
 		match: match,
 	})
-	newV := uint(len(b.dfa.states) - 1)
+	newV := len(b.dfa.states) - 1
 	b.cache[k] = newV
-	return &newV, false
+	return newV, false
 }
 
-func (b *dfaBuilder) addMismatchUtf8States(fromSi uint, levState []uint) (*uint, []uint, error) {
+func (b *dfaBuilder) addMismatchUtf8States(fromSi int, levState []int) (int, []int, error) {
 	mmState := b.lev.accept(levState, nil)
 	toSi, _ := b.cached(mmState)
-	if toSi == nil {
-		return nil, nil, nil
+	if toSi == 0 {
+		return 0, nil, nil
 	}
-	err := b.addUtf8Sequences(false, fromSi, *toSi, 0, unicode.MaxRune)
+	err := b.addUtf8Sequences(false, fromSi, toSi, 0, unicode.MaxRune)
 	if err != nil {
-		return nil, nil, err
+		return 0, nil, err
 	}
 	return toSi, mmState, nil
 }
 
-func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromChar, toChar rune) error {
+func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar, toChar rune) error {
 	sequences, err := utf8.NewSequences(fromChar, toChar)
 	if err != nil {
 		return err
@@ -173,19 +175,18 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi uint, fromCha
 	return nil
 }
 
-func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to uint, rang *utf8.Range) {
+func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to int, rang *utf8.Range) {
 	for by := rang.Start; by <= rang.End; by++ {
-		if overwrite || b.dfa.states[from].next[by] == nil {
-
-			b.dfa.states[from].next[by] = &to
+		if overwrite || b.dfa.states[from].next[by] == 0 {
+			b.dfa.states[from].next[by] = to
 		}
 	}
 }
 
-func (b *dfaBuilder) newState(match bool) uint {
+func (b *dfaBuilder) newState(match bool) int {
 	b.dfa.states = append(b.dfa.states, &state{
-		next:  make([]*uint, 256),
+		next:  make([]int, 256),
 		match: match,
 	})
-	return uint(len(b.dfa.states) - 1)
+	return len(b.dfa.states) - 1
 }

@@ -76,23 +76,22 @@ func NewRegexpWithLimit(expr string, size uint) (*Regexp, error) {
 }
 
 // Start returns the start state of this automaton.
-func (r *Regexp) Start() interface{} {
-	var zero uint
-	return &zero
+func (r *Regexp) Start() int {
+	return 1
 }
 
 // IsMatch returns if the specified state is a matching state.
-func (r *Regexp) IsMatch(s interface{}) bool {
-	if state, ok := s.(*uint); ok {
-		return r.dfa.states[*state].match
+func (r *Regexp) IsMatch(s int) bool {
+	if s < len(r.dfa.states) {
+		return r.dfa.states[s].match
 	}
 	return false
 }
 
 // CanMatch returns if the specified state can ever transition to a matching
 // state.
-func (r *Regexp) CanMatch(s interface{}) bool {
-	if v, ok := s.(*uint); ok && v != nil {
+func (r *Regexp) CanMatch(s int) bool {
+	if s < len(r.dfa.states) && s > 0 {
 		return true
 	}
 	return false
@@ -100,19 +99,15 @@ func (r *Regexp) CanMatch(s interface{}) bool {
 
 // WillAlwaysMatch returns if the specified state will always end in a
 // matching state.
-func (r *Regexp) WillAlwaysMatch(interface{}) bool {
+func (r *Regexp) WillAlwaysMatch(int) bool {
 	return false
 }
 
 // Accept returns the new state, resulting from the transite byte b
 // when currently in the state s.
-func (r *Regexp) Accept(s interface{}, b byte) interface{} {
-	if state, ok := s.(*uint); ok {
-		next := r.dfa.states[*state].next[b]
-		if next == nil {
-			return nil
-		}
-		return next
+func (r *Regexp) Accept(s int, b byte) int {
+	if s < len(r.dfa.states) {
+		return r.dfa.states[s].next[b]
 	}
-	return nil
+	return 0
 }

@@ -18,47 +18,47 @@ package vellum
 type Automaton interface {
 
 	// Start returns the start state
-	Start() interface{}
+	Start() int
 
 	// IsMatch returns true if and only if the state is a match
-	IsMatch(interface{}) bool
+	IsMatch(int) bool
 
 	// CanMatch returns true if and only if it is possible to reach a match
 	// in zero or more steps
-	CanMatch(interface{}) bool
+	CanMatch(int) bool
 
 	// WillAlwaysMatch returns true if and only if the current state matches
 	// and will always match no matter what steps are taken
-	WillAlwaysMatch(interface{}) bool
+	WillAlwaysMatch(int) bool
 
 	// Accept returns the next state given the input to the specified state
-	Accept(interface{}, byte) interface{}
+	Accept(int, byte) int
 }
 
 // AlwaysMatch is an Automaton implementation which always matches
 type AlwaysMatch struct{}
 
 // Start returns the AlwaysMatch start state
-func (m *AlwaysMatch) Start() interface{} {
-	return nil
+func (m *AlwaysMatch) Start() int {
+	return 0
 }
 
 // IsMatch always returns true
-func (m *AlwaysMatch) IsMatch(interface{}) bool {
+func (m *AlwaysMatch) IsMatch(int) bool {
 	return true
 }
 
 // CanMatch always returns true
-func (m *AlwaysMatch) CanMatch(interface{}) bool {
+func (m *AlwaysMatch) CanMatch(int) bool {
 	return true
 }
 
 // WillAlwaysMatch always returns true
-func (m *AlwaysMatch) WillAlwaysMatch(interface{}) bool {
+func (m *AlwaysMatch) WillAlwaysMatch(int) bool {
 	return true
 }
 
 // Accept returns the next AlwaysMatch state
-func (m *AlwaysMatch) Accept(interface{}, byte) interface{} {
-	return nil
+func (m *AlwaysMatch) Accept(int, byte) int {
+	return 0
 }

@@ -23,24 +23,24 @@ type dynamicLevenshtein struct {
 	distance uint
 }
 
-func (d *dynamicLevenshtein) start() []uint {
+func (d *dynamicLevenshtein) start() []int {
 	runeCount := utf8.RuneCountInString(d.query)
-	rv := make([]uint, runeCount+1)
+	rv := make([]int, runeCount+1)
 	for i := 0; i < runeCount+1; i++ {
-		rv[i] = uint(i)
+		rv[i] = i
 	}
 	return rv
 }
 
-func (d *dynamicLevenshtein) isMatch(state []uint) bool {
+func (d *dynamicLevenshtein) isMatch(state []int) bool {
 	last := state[len(state)-1]
-	if last <= d.distance {
+	if uint(last) <= d.distance {
 		return true
 	}
 	return false
 }
 
-func (d *dynamicLevenshtein) canMatch(state []uint) bool {
+func (d *dynamicLevenshtein) canMatch(state []int) bool {
 	if len(state) > 0 {
 		min := state[0]
 		for i := 1; i < len(state); i++ {
@@ -48,29 +48,29 @@ func (d *dynamicLevenshtein) canMatch(state []uint) bool {
 				min = state[i]
 			}
 		}
-		if min <= d.distance {
+		if uint(min) <= d.distance {
 			return true
 		}
 	}
 	return false
 }
 
-func (d *dynamicLevenshtein) accept(state []uint, r *rune) []uint {
-	next := []uint{state[0] + 1}
+func (d *dynamicLevenshtein) accept(state []int, r *rune) []int {
+	next := []int{state[0] + 1}
 	i := 0
 	for _, c := range d.query {
-		var cost uint
+		var cost int
 		if r == nil || c != *r {
 			cost = 1
 		}
 		v := min(min(next[i]+1, state[i+1]+1), state[i]+cost)
-		next = append(next, min(v, d.distance+1))
+		next = append(next, min(v, int(d.distance)+1))
 		i++
 	}
 	return next
 }
 
-func min(a, b uint) uint {
+func min(a, b int) int {
 	if a < b {
 		return a
 	}

@@ -26,17 +26,23 @@ var ErrTooManyStates = fmt.Errorf("dfa contains more than %d states",
 
 type dfaBuilder struct {
 	dfa   *dfa
-	cache map[string]uint
+	cache map[string]int
 }
 
 func newDfaBuilder(insts prog) *dfaBuilder {
-	return &dfaBuilder{
+	d := &dfaBuilder{
 		dfa: &dfa{
 			insts:  insts,
 			states: make([]*state, 0, 16),
 		},
-		cache: make(map[string]uint, 1024),
+		cache: make(map[string]int, 1024),
 	}
+	// add 0 state that is invalid
+	d.dfa.states = append(d.dfa.states, &state{
+		next:  make([]int, 256),
+		match: false,
+	})
+	return d
 }
 
 func (d *dfaBuilder) build() (*dfa, error) {
@@ -44,16 +50,16 @@ func (d *dfaBuilder) build() (*dfa, error) {
 	next := newSparseSet(uint(len(d.dfa.insts)))
 
 	d.dfa.add(cur, 0)
-	states := uintpStack{d.cachedState(cur)}
-	seen := make(map[uint]struct{})
-	var s *uint
+	states := intStack{d.cachedState(cur)}
+	seen := make(map[int]struct{})
+	var s int
 	states, s = states.Pop()
-	for s != nil {
+	for s != 0 {
 		for b := 0; b < 256; b++ {
-			ns := d.runState(cur, next, *s, byte(b))
-			if ns != nil {
-				if _, ok := seen[*ns]; !ok {
-					seen[*ns] = struct{}{}
+			ns := d.runState(cur, next, s, byte(b))
+			if ns != 0 {
+				if _, ok := seen[ns]; !ok {
+					seen[ns] = struct{}{}
 					states = states.Push(ns)
 				}
 			}
@@ -66,7 +72,7 @@ func (d *dfaBuilder) build() (*dfa, error) {
 	return d.dfa, nil
 }
 
-func (d *dfaBuilder) runState(cur, next *sparseSet, state uint, b byte) *uint {
+func (d *dfaBuilder) runState(cur, next *sparseSet, state int, b byte) int {
 	cur.Clear()
 	for _, ip := range d.dfa.states[state].insts {
 		cur.Add(ip)
@@ -77,7 +83,7 @@ func (d *dfaBuilder) runState(cur, next *sparseSet, state uint, b byte) *uint {
 	return nextState
 }
 
-func (d *dfaBuilder) cachedState(set *sparseSet) *uint {
+func (d *dfaBuilder) cachedState(set *sparseSet) int {
 	var insts []uint
 	var isMatch bool
 	for i := uint(0); i < uint(set.Len()); i++ {
@@ -91,21 +97,21 @@ func (d *dfaBuilder) cachedState(set *sparseSet) *uint {
 		}
 	}
 	if len(insts) == 0 {
-		return nil
+		return 0
 	}
 	k := fmt.Sprintf("%v", insts)
 	v, ok := d.cache[k]
 	if ok {
-		return &v
+		return v
 	}
 	d.dfa.states = append(d.dfa.states, &state{
 		insts: insts,
-		next:  make([]*uint, 256),
+		next:  make([]int, 256),
 		match: isMatch,
 	})
-	newV := uint(len(d.dfa.states) - 1)
+	newV := len(d.dfa.states) - 1
 	d.cache[k] = newV
-	return &newV
+	return newV
 }
 
 type dfa struct {
@@ -147,20 +153,20 @@ func (d *dfa) run(from, to *sparseSet, b byte) bool {
 
 type state struct {
 	insts []uint
-	next  []*uint
+	next  []int
 	match bool
 }
 
-type uintpStack []*uint
+type intStack []int
 
-func (s uintpStack) Push(v *uint) uintpStack {
+func (s intStack) Push(v int) intStack {
 	return append(s, v)
 }
 
-func (s uintpStack) Pop() (uintpStack, *uint) {
+func (s intStack) Pop() (intStack, int) {
 	l := len(s)
 	if l < 1 {
-		return s, nil
+		return s, 0
 	}
 	return s[:l-1], s[l-1]
 }
