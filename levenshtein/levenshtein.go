@@ -36,7 +36,7 @@ type Levenshtein struct {
 
 // NewLevenshtein creates a new Levenshtein automaton for the specified
 // query string and edit distance.
-func NewLevenshtein(query string, distance int) (*Levenshtein, error) {
+func New(query string, distance int) (*Levenshtein, error) {
 	lev := &dynamicLevenshtein{
 		query:    query,
 		distance: uint(distance),

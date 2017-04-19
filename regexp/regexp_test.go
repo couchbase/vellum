@@ -166,7 +166,7 @@ func TestRegexp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s - %v", test.query, test.seq), func(t *testing.T) {
-			r, err := NewRegexp(test.query)
+			r, err := New(test.query)
 			if err != nil {
 				t.Fatal(err)
 			}

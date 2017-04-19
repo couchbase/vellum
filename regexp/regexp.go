@@ -46,15 +46,15 @@ type Regexp struct {
 // expression.  By default it is limited to approximately 10MB for the
 // compiled finite state automaton.  If this size is exceeded,
 // ErrCompiledTooBig will be returned.
-func NewRegexp(expr string) (*Regexp, error) {
-	return NewRegexpWithLimit(expr, 10*(1<<20))
+func New(expr string) (*Regexp, error) {
+	return NewWithLimit(expr, 10*(1<<20))
 }
 
 // NewRegexpWithLimit creates a new Regular Expression automaton with
 // the specified expression.  The size of the compiled finite state
 // automaton exceeds the user specified size,  ErrCompiledTooBig will be
 // returned.
-func NewRegexpWithLimit(expr string, size uint) (*Regexp, error) {
+func NewWithLimit(expr string, size uint) (*Regexp, error) {
 	parsed, err := syntax.Parse(expr, syntax.Perl)
 	if err != nil {
 		return nil, err

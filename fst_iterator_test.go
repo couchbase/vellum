@@ -480,7 +480,7 @@ func TestFuzzySearch(t *testing.T) {
 		t.Fatalf("error loading set: %v", err)
 	}
 
-	fuzzy, err := levenshtein.NewLevenshtein("tue", 1)
+	fuzzy, err := levenshtein.New("tue", 1)
 	if err != nil {
 		t.Fatalf("error building levenshtein automaton: %v", err)
 	}
@@ -526,7 +526,7 @@ func TestRegexpSearch(t *testing.T) {
 		t.Fatalf("error loading set: %v", err)
 	}
 
-	r, err := regexp.NewRegexp(`t.*s`)
+	r, err := regexp.New(`t.*s`)
 	if err != nil {
 		t.Fatalf("error building regexp automaton: %v", err)
 	}

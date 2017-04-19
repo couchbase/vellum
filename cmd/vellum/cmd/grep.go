@@ -43,7 +43,7 @@ var grepCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		r, err := regexp.NewRegexp(query)
+		r, err := regexp.New(query)
 		if err != nil {
 			return err
 		}

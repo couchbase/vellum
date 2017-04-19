@@ -192,7 +192,7 @@ func TestLevenshtein(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			l, err := NewLevenshtein(test.query, test.distance)
+			l, err := New(test.query, test.distance)
 			if err != nil {
 				t.Fatal(err)
 			}
