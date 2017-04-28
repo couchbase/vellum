@@ -72,5 +72,5 @@ func Open(path string) (*FST, error) {
 
 // Load will return the FST represented by the provided byte slice.
 func Load(data []byte) (*FST, error) {
-	return newFST(data)
+	return new(data, nil)
 }

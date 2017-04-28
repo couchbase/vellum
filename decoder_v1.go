@@ -39,24 +39,22 @@ func newDecoderV1(data []byte) *decoderV1 {
 	}
 }
 
-func (d *decoderV1) start(f *FST) error {
-	return d.parseFooter()
-}
-
-func (d *decoderV1) parseFooter() error {
-	footer := d.data[len(d.data)-footerSizeV1:]
-	// first 8 bytes not implemented (should contain number of entries)
-	d.len = binary.LittleEndian.Uint64(footer)
-	d.root = binary.LittleEndian.Uint64(footer[8:])
-	return nil
-}
-
 func (d *decoderV1) getRoot() int {
-	return int(d.root)
+	if len(d.data) < footerSizeV1 {
+		return noneAddr
+	}
+	footer := d.data[len(d.data)-footerSizeV1:]
+	root := binary.LittleEndian.Uint64(footer[8:])
+	return int(root)
 }
 
 func (d *decoderV1) getLen() int {
-	return int(d.len)
+	if len(d.data) < footerSizeV1 {
+		return 0
+	}
+	footer := d.data[len(d.data)-footerSizeV1:]
+	dlen := binary.LittleEndian.Uint64(footer)
+	return int(dlen)
 }
 
 func (d *decoderV1) stateAt(addr int) (fstState, error) {
@@ -104,8 +102,10 @@ func (f *fstStateV1) isEncodedSingle() bool {
 
 func (f *fstStateV1) at(data []byte, addr int) error {
 	f.data = data
-	if addr == 0 {
+	if addr == emptyAddr {
 		return f.atZero()
+	} else if addr == noneAddr {
+		return f.atNone()
 	}
 	if addr > len(data) || addr < 16 {
 		return fmt.Errorf("invalid address %d/%d", addr, len(data))
@@ -123,6 +123,15 @@ func (f *fstStateV1) atZero() error {
 	f.bottom = 1
 	f.numTrans = 0
 	f.final = true
+	f.outFinal = 0
+	return nil
+}
+
+func (f *fstStateV1) atNone() error {
+	f.top = 0
+	f.bottom = 1
+	f.numTrans = 0
+	f.final = false
 	f.outFinal = 0
 	return nil
 }
@@ -227,12 +236,12 @@ func (f *fstStateV1) TransitionFor(b byte) (int, int, uint64) {
 		if f.singleTransChar == b {
 			return 0, int(f.singleTransAddr), f.singleTransOut
 		}
-		return -1, -1, 0
+		return -1, noneAddr, 0
 	}
 	transitionKeys := f.data[f.transBottom:f.transTop]
 	pos := bytes.IndexByte(transitionKeys, b)
 	if pos < 0 {
-		return -1, -1, 0
+		return -1, noneAddr, 0
 	}
 	transDests := f.data[f.destBottom:f.destTop]
 	dest := int(readPackedUint(transDests[pos*f.transSize : pos*f.transSize+f.transSize]))

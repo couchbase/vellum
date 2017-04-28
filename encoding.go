@@ -46,7 +46,6 @@ func registerEncoder(ver int, cons encoderConstructor) {
 }
 
 type decoder interface {
-	start(f *FST) error
 	getRoot() int
 	getLen() int
 	stateAt(addr int) (fstState, error)

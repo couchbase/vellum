@@ -109,6 +109,34 @@ func TestRoundTripSimple(t *testing.T) {
 	if ok, _ := fst.Contains([]byte("x")); ok {
 		t.Errorf("expected to not contain x, but did")
 	}
+
+	// now try accessing it through the Automaton interface
+	exists := AutomatonContains(fst, []byte("mon"))
+	if !exists {
+		t.Errorf("expected key 'mon' to exist, doesn't")
+	}
+
+	exists = AutomatonContains(fst, []byte("mons"))
+	if exists {
+		t.Errorf("expected key 'mo' to not exist, does")
+	}
+
+	// now try accessing it through the Transducer interface
+	var val uint64
+	exists, val = TransducerGet(fst, []byte("mon"))
+	if !exists {
+		t.Errorf("expected key 'mon' to exist, doesn't")
+	}
+	if val != 2 {
+		t.Errorf("expected val 2, got %d", val)
+	}
+
+	// now try accessing it through the Transducer interface
+	// for key that doesn't exist
+	exists, _ = TransducerGet(fst, []byte("mons"))
+	if exists {
+		t.Errorf("expected key 'mo' to not exist, does")
+	}
 }
 
 func TestRoundTripThousand(t *testing.T) {
