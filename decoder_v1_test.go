@@ -34,12 +34,8 @@ func TestShortHeader(t *testing.T) {
 	}
 }
 
-func TestDecoderParseFooter(t *testing.T) {
+func TestDecoderRootLen(t *testing.T) {
 	d := newDecoderV1([]byte{1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0})
-	err := d.parseFooter()
-	if err != nil {
-		t.Fatal(err)
-	}
 	if d.getLen() != 1 {
 		t.Fatalf("expected parsed footer length 1, got %d", d.len)
 	}

@@ -28,43 +28,30 @@ type FST struct {
 	f       io.Closer
 	ver     int
 	len     int
+	typ     int
 	data    []byte
 	decoder decoder
 }
 
-func newFST(data []byte) (*FST, error) {
-	rv := &FST{
+func new(data []byte, f io.Closer) (rv *FST, err error) {
+	rv = &FST{
 		data: data,
+		f:    f,
 	}
 
-	err := rv.initFST()
+	rv.ver, rv.typ, err = decodeHeader(data)
 	if err != nil {
 		return nil, err
 	}
 
+	rv.decoder, err = loadDecoder(rv.ver, rv.data)
+	if err != nil {
+		return nil, err
+	}
+
+	rv.len = rv.decoder.getLen()
+
 	return rv, nil
-}
-
-func (f *FST) initFST() error {
-	var err error
-	f.ver, _, err = decodeHeader(f.data)
-	if err != nil {
-		return err
-	}
-
-	f.decoder, err = loadDecoder(f.ver, f.data)
-	if err != nil {
-		return err
-	}
-
-	err = f.decoder.start(f)
-	if err != nil {
-		return err
-	}
-
-	f.len = f.decoder.getLen()
-
-	return nil
 }
 
 // Contains returns true if this FST contains the specified key.
@@ -86,7 +73,7 @@ func (f *FST) Get(input []byte) (uint64, bool, error) {
 	}
 	for i := range input {
 		_, curr, output := state.TransitionFor(input[i])
-		if curr < 0 {
+		if curr == noneAddr {
 			return 0, false, nil
 		}
 
@@ -115,6 +102,11 @@ func (f *FST) Len() int {
 	return f.len
 }
 
+// Type returns the type of this FST instance.
+func (f *FST) Type() int {
+	return f.typ
+}
+
 // Close will unmap any mmap'd data (if managed by vellum) and it will close
 // the backing file (if managed by vellum).  You MUST call Close() for any
 // FST instance that is created.
@@ -128,6 +120,59 @@ func (f *FST) Close() error {
 	f.data = nil
 	f.decoder = nil
 	return nil
+}
+
+// Start returns the start state of this Automaton
+func (f *FST) Start() int {
+	return f.decoder.getRoot()
+}
+
+// IsMatch returns if this state is a matching state in this Automaton
+func (f *FST) IsMatch(addr int) bool {
+	match, _ := f.IsMatchWithVal(addr)
+	return match
+}
+
+// CanMatch returns if this state can ever transition to a matching state
+// in this Automaton
+func (f *FST) CanMatch(addr int) bool {
+	if addr == noneAddr {
+		return false
+	}
+	return true
+}
+
+// WillAlwaysMatch returns if from this state the Automaton will always
+// be in a matching state
+func (f *FST) WillAlwaysMatch(int) bool {
+	return false
+}
+
+// Accept returns the next state for this Automaton on input of byte b
+func (f *FST) Accept(addr int, b byte) int {
+	next, _ := f.AcceptWithVal(addr, b)
+	return next
+}
+
+// IsMatchWithVal returns if this state is a matching state in this Automaton
+// and also returns the final output value for this state
+func (f *FST) IsMatchWithVal(addr int) (bool, uint64) {
+	s, err := f.decoder.stateAt(addr)
+	if err != nil {
+		return false, 0
+	}
+	return s.Final(), s.FinalOutput()
+}
+
+// AcceptWithVal returns the next state for this Automaton on input of byte b
+// and also returns the output value for the transition
+func (f *FST) AcceptWithVal(addr int, b byte) (int, uint64) {
+	s, err := f.decoder.stateAt(addr)
+	if err != nil {
+		return noneAddr, 0
+	}
+	_, next, output := s.TransitionFor(b)
+	return next, output
 }
 
 // Iterator returns a new Iterator capable of enumerating the key/value pairs

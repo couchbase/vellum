@@ -20,15 +20,8 @@ import "io/ioutil"
 
 func open(path string) (*FST, error) {
 	data, err := ioutil.ReadFile(string)
-	rv := &FST{
-		data: data,
-	}
 	if err != nil {
 		return nil, err
 	}
-	err = rv.initFST()
-	if err != nil {
-		return nil, err
-	}
-	return rv, nil
+	return new(data, nil)
 }

@@ -91,7 +91,7 @@ func (i *Iterator) pointTo(key []byte) error {
 		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
 
 		pos, nextAddr, nextVal := curr.TransitionFor(key[j])
-		if nextAddr < 0 {
+		if nextAddr == noneAddr {
 			// needed transition doesn't exist
 			// find last trans before the one we needed
 			for q := 0; q < curr.NumTransitions(); q++ {

@@ -35,6 +35,24 @@ type Automaton interface {
 	Accept(int, byte) int
 }
 
+// AutomatonContains implements an generic Contains() method which works
+// on any implementation of Automaton
+func AutomatonContains(a Automaton, k []byte) bool {
+	i := 0
+	curr := a.Start()
+	for a.CanMatch(curr) && i < len(k) {
+		curr = a.Accept(curr, k[i])
+		if curr == noneAddr {
+			break
+		}
+		i++
+	}
+	if i != len(k) {
+		return false
+	}
+	return a.IsMatch(curr)
+}
+
 // AlwaysMatch is an Automaton implementation which always matches
 type AlwaysMatch struct{}
 

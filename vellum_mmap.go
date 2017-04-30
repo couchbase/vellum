@@ -53,17 +53,8 @@ func open(path string) (*FST, error) {
 		_ = f.Close()
 		return nil, err
 	}
-	rv := &FST{
-		f: &mmapWrapper{
-			f:  f,
-			mm: mm,
-		},
-		data: mm,
-	}
-	err = rv.initFST()
-	if err != nil {
-		_ = rv.Close()
-		return nil, err
-	}
-	return rv, nil
+	return new(mm, &mmapWrapper{
+		f:  f,
+		mm: mm,
+	})
 }
