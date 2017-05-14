@@ -413,3 +413,174 @@ func TestRoundTripEmptyStringAndOthers(t *testing.T) {
 		t.Errorf("expected %v, got: %v", want, got)
 	}
 }
+
+func TestMerge(t *testing.T) {
+
+	// first create a file with the smallSample data
+	f, err := ioutil.TempFile("", "vellum1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	defer func() {
+		err = os.Remove(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	b, err := New(f, nil)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+
+	err = insertStringMap(b, smallSample)
+	if err != nil {
+		t.Fatalf("error building: %v", err)
+	}
+
+	err = b.Close()
+	if err != nil {
+		t.Fatalf("err closing: %v", err)
+	}
+
+	smallSample2 := map[string]uint64{
+		"bold": 25,
+		"last": 1,
+		"next": 500,
+		"tank": 0,
+	}
+
+	// next create a file with the smallSample2 data
+	f2, err := ioutil.TempFile("", "vellum1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err = f2.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	defer func() {
+		err = os.Remove(f2.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	b, err = New(f2, nil)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+
+	err = insertStringMap(b, smallSample2)
+	if err != nil {
+		t.Fatalf("error building: %v", err)
+	}
+
+	err = b.Close()
+	if err != nil {
+		t.Fatalf("err closing: %v", err)
+	}
+
+	// now open them both up
+	fst, err := Open(f.Name())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+	defer func() {
+		err = fst.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	fst2, err := Open(f2.Name())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+	defer func() {
+		err = fst2.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	// create full range iterators on both
+	itr, err := fst.Iterator(nil, nil)
+	if err != nil {
+		t.Fatalf("error opening iterator: %v", err)
+	}
+	itr2, err := fst2.Iterator(nil, nil)
+	if err != nil {
+		t.Fatalf("error opening iterator: %v", err)
+	}
+
+	f3, err := ioutil.TempFile("", "vellum1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err = f3.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	defer func() {
+		err = os.Remove(f3.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	err = Merge(f3, nil, []Iterator{itr, itr2}, MergeSum)
+	if err != nil {
+		t.Fatalf("error merging iterators: %v", err)
+	}
+
+	// now check it
+	fstc, err := Open(f3.Name())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+	defer func() {
+		err = fstc.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	if fstc.Len() != 8 {
+		t.Fatalf("expected length 8, got %d", fst.Len())
+	}
+
+	// now check all the expected values
+	want := map[string]uint64{
+		"mon":   2,
+		"tues":  3,
+		"thurs": 5,
+		"tye":   99,
+		"bold":  25,
+		"last":  1,
+		"next":  500,
+		"tank":  0,
+	}
+	got := map[string]uint64{}
+	itrc, err := fstc.Iterator(nil, nil)
+	for err == nil {
+		key, val := itrc.Current()
+		got[string(key)] = val
+		err = itrc.Next()
+	}
+	if err != ErrIteratorDone {
+		t.Errorf("iterator error: %v", err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("expected %v, got: %v", want, got)
+	}
+}
