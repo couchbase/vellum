@@ -230,3 +230,40 @@ func TestMergeFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestEmptyMergeIterator(t *testing.T) {
+	mi, err := NewMergeIterator([]Iterator{}, MergeMin)
+	if err != ErrIteratorDone {
+		t.Fatalf("expected iterator done, got %v", err)
+	}
+
+	// should get valid merge iterator anyway
+	if mi == nil {
+		t.Fatalf("expected non-nil merge iterator")
+	}
+
+	// current returns nil, 0 per interface spec
+	ck, cv := mi.Current()
+	if ck != nil {
+		t.Errorf("expected current to return nil key, got %v", ck)
+	}
+	if cv != 0 {
+		t.Errorf("expected current to return 0 val, got %d", cv)
+	}
+
+	// calling Next/Seek continues to return ErrIteratorDone
+	err = mi.Next()
+	if err != ErrIteratorDone {
+		t.Errorf("expected iterator done, got %v", err)
+	}
+	err = mi.Seek([]byte("anywhere"))
+	if err != ErrIteratorDone {
+		t.Errorf("expected iterator done, got %v", err)
+	}
+
+	err = mi.Close()
+	if err != nil {
+		t.Errorf("error closing %v", err)
+	}
+
+}

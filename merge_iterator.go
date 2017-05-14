@@ -55,7 +55,7 @@ func NewMergeIterator(itrs []Iterator, f MergeFunc) (*MergeIterator, error) {
 	}
 	rv.init()
 	if rv.lowK == nil {
-		return nil, ErrIteratorDone
+		return rv, ErrIteratorDone
 	}
 	return rv, nil
 }
@@ -68,6 +68,9 @@ func (m *MergeIterator) init() {
 }
 
 func (m *MergeIterator) updateMatches() {
+	if len(m.itrs) < 1 {
+		return
+	}
 	m.lowK = m.currKs[0]
 	m.lowIdxs = m.lowIdxs[:0]
 	m.lowIdxs = append(m.lowIdxs, 0)
