@@ -14,12 +14,36 @@
 
 package vellum
 
-import "bytes"
+import (
+	"bytes"
+)
 
-// Iterator is a structure for iterating key/value pairs in this FST in
-// lexicographic order.  Iterators should be constructed with the Iterator
+// Iterator represents a means of visity key/value pairs in order.
+type Iterator interface {
+
+	// Current() returns the key/value pair currently pointed to.
+	// The []byte of the key is ONLY guaranteed to be valid until
+	// another call to Next/Seek/Close.  If you need it beyond that
+	// point you MUST make a copy.
+	Current() ([]byte, uint64)
+
+	// Next() advances the iterator to the next key/value pair.
+	// If no more key/value pairs exist, ErrIteratorDone is returned.
+	Next() error
+
+	// Seek() advances the iterator the specified key, or the next key
+	// if it does not exist.
+	// If no keys exist after that point, ErrIteratorDone is returned.
+	Seek(key []byte) error
+
+	// Close() frees any resources held by this iterator.
+	Close() error
+}
+
+// FSTIterator is a structure for iterating key/value pairs in this FST in
+// lexicographic order.  Iterators should be constructed with the FSTIterator
 // method on the parent FST structure.
-type Iterator struct {
+type FSTIterator struct {
 	f   *FST
 	aut Automaton
 
@@ -34,13 +58,13 @@ type Iterator struct {
 }
 
 func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
-	aut Automaton) (*Iterator, error) {
+	aut Automaton) (*FSTIterator, error) {
 
 	if aut == nil {
 		aut = &AlwaysMatch{}
 	}
 
-	rv := &Iterator{
+	rv := &FSTIterator{
 		f:                 f,
 		startKeyInclusive: startKeyInclusive,
 		endKeyExclusive:   endKeyExclusive,
@@ -56,7 +80,7 @@ func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
 }
 
 // pointTo attempts to point us to the specified location
-func (i *Iterator) pointTo(key []byte) error {
+func (i *FSTIterator) pointTo(key []byte) error {
 
 	// tried to seek before start
 	if bytes.Compare(key, i.startKeyInclusive) < 0 {
@@ -126,7 +150,7 @@ func (i *Iterator) pointTo(key []byte) error {
 // Current returns the key and value currently pointed to by the iterator.
 // If the iterator is not pointing at a valid value (because Iterator/Next/Seek)
 // returned an error previously, it may return nil,0.
-func (i *Iterator) Current() ([]byte, uint64) {
+func (i *FSTIterator) Current() ([]byte, uint64) {
 	curr := i.statesStack[len(i.statesStack)-1]
 	if curr.Final() {
 		var total uint64
@@ -142,11 +166,11 @@ func (i *Iterator) Current() ([]byte, uint64) {
 // Next advances this iterator to the next key/value pair.  If there is none
 // or the advancement goes beyond the configured endKeyExclusive, then
 // ErrIteratorDone is returned.
-func (i *Iterator) Next() error {
+func (i *FSTIterator) Next() error {
 	return i.next(-1)
 }
 
-func (i *Iterator) next(lastOffset int) error {
+func (i *FSTIterator) next(lastOffset int) error {
 
 	// remember where we started
 	start := make([]byte, len(i.keysStack))
@@ -215,7 +239,7 @@ func (i *Iterator) next(lastOffset int) error {
 // is not in the FST, Current() will return the next largest key.  If this
 // seek operation would go past the last key, or outside the configured
 // startKeyInclusive/endKeyExclusive then ErrIteratorDone is returned.
-func (i *Iterator) Seek(key []byte) error {
+func (i *FSTIterator) Seek(key []byte) error {
 	err := i.pointTo(key)
 	if err != nil {
 		return err
@@ -224,7 +248,7 @@ func (i *Iterator) Seek(key []byte) error {
 }
 
 // Close will free any resources held by this iterator.
-func (i *Iterator) Close() error {
+func (i *FSTIterator) Close() error {
 	// at the moment we don't do anything, but wanted this for API completeness
 	return nil
 }

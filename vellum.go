@@ -74,3 +74,38 @@ func Open(path string) (*FST, error) {
 func Load(data []byte) (*FST, error) {
 	return new(data, nil)
 }
+
+// Merge will iterate through the provided Iterators, merge duplicate keys
+// with the provided MergeFunc, and build a new FST to the provided Writer.
+func Merge(w io.Writer, opts *BuilderOpts, itrs []Iterator, f MergeFunc) error {
+	builder, err := New(w, opts)
+	if err != nil {
+		return err
+	}
+
+	itr, err := NewMergeIterator(itrs, f)
+	for err == nil {
+		k, v := itr.Current()
+		err = builder.Insert(k, v)
+		if err != nil {
+			return err
+		}
+		err = itr.Next()
+	}
+
+	if err != nil && err != ErrIteratorDone {
+		return err
+	}
+
+	err = itr.Close()
+	if err != nil {
+		return err
+	}
+
+	err = builder.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

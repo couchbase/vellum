@@ -86,10 +86,19 @@ func (b *Builder) Insert(key []byte, val uint64) error {
 	if err != nil {
 		return err
 	}
-	b.last = key
+	b.copyLastKey(key)
 	b.unfinished.addSuffix(key[prefixLen:], out)
 
 	return nil
+}
+
+func (b *Builder) copyLastKey(key []byte) {
+	if b.last == nil {
+		b.last = make([]byte, 0, 64)
+	} else {
+		b.last = b.last[:0]
+	}
+	b.last = append(b.last, key...)
 }
 
 // Close MUST be called after inserting all values.
