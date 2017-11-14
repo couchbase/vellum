@@ -190,6 +190,10 @@ func (m *testIterator) Seek(key []byte) error {
 	return nil
 }
 
+func (m *testIterator) Reset(f *FST, startKeyInclusive, endKeyExclusive []byte, aut Automaton) error {
+	return nil
+}
+
 func (m *testIterator) Close() error {
 	return nil
 }
