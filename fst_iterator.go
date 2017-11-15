@@ -36,6 +36,10 @@ type Iterator interface {
 	// If no keys exist after that point, ErrIteratorDone is returned.
 	Seek(key []byte) error
 
+	// Reset resets the Iterator' internal state to allow for iterator
+	// reuse (e.g. pooling).
+	Reset(f *FST, startKeyInclusive, endKeyExclusive []byte, aut Automaton) error
+
 	// Close() frees any resources held by this iterator.
 	Close() error
 }
@@ -60,23 +64,27 @@ type FSTIterator struct {
 func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
 	aut Automaton) (*FSTIterator, error) {
 
-	if aut == nil {
-		aut = &AlwaysMatch{}
-	}
-
-	rv := &FSTIterator{
-		f:                 f,
-		startKeyInclusive: startKeyInclusive,
-		endKeyExclusive:   endKeyExclusive,
-		aut:               aut,
-	}
-
-	err := rv.pointTo(startKeyInclusive)
+	rv := &FSTIterator{}
+	err := rv.Reset(f, startKeyInclusive, endKeyExclusive, aut)
 	if err != nil {
 		return nil, err
 	}
-
 	return rv, nil
+}
+
+// Reset resets the Iterator' internal state to allow for iterator
+// reuse (e.g. pooling).
+func (i *FSTIterator) Reset(f *FST, startKeyInclusive, endKeyExclusive []byte, aut Automaton) error {
+	if aut == nil {
+		aut = alwaysMatchAutomaton
+	}
+
+	i.f = f
+	i.startKeyInclusive = startKeyInclusive
+	i.endKeyExclusive = endKeyExclusive
+	i.aut = aut
+
+	return i.pointTo(startKeyInclusive)
 }
 
 // pointTo attempts to point us to the specified location
