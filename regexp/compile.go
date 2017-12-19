@@ -18,7 +18,7 @@ import (
 	"regexp/syntax"
 	"unicode"
 
-	"github.com/couchbaselabs/vellum/utf8"
+	"github.com/couchbase/vellum/utf8"
 )
 
 type compiler struct {

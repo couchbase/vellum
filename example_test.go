@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/couchbaselabs/vellum"
+	"github.com/couchbase/vellum"
 )
 
 func Example() {
