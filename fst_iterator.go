@@ -107,7 +107,7 @@ func (i *FSTIterator) pointTo(key []byte) error {
 	i.valsStack = i.valsStack[:0]
 	i.autStatesStack = i.autStatesStack[:0]
 
-	root, err := i.f.decoder.stateAt(i.f.decoder.getRoot())
+	root, err := i.f.decoder.stateAt(i.f.decoder.getRoot(), nil)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (i *FSTIterator) pointTo(key []byte) error {
 		}
 		autNext := i.aut.Accept(autCurr, key[j])
 
-		next, err := i.f.decoder.stateAt(nextAddr)
+		next, err := i.f.decoder.stateAt(nextAddr, nil)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func (i *FSTIterator) next(lastOffset int) error {
 			if i.aut.CanMatch(autNext) {
 				pos, nextAddr, v := curr.TransitionFor(t)
 				// push onto stack
-				next, err := i.f.decoder.stateAt(nextAddr)
+				next, err := i.f.decoder.stateAt(nextAddr, nil)
 				if err != nil {
 					return err
 				}

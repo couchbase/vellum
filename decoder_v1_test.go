@@ -347,7 +347,7 @@ func TestDecoderStateAt(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			d := newDecoderV1(test.data)
 			test.want.data = test.data
-			got, err := d.stateAt(len(test.data) - 17)
+			got, err := d.stateAt(len(test.data)-17, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
