@@ -59,6 +59,8 @@ type FSTIterator struct {
 	keysPosStack   []int
 	valsStack      []uint64
 	autStatesStack []int
+
+	nextStart []byte
 }
 
 func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
@@ -181,15 +183,19 @@ func (i *FSTIterator) Next() error {
 func (i *FSTIterator) next(lastOffset int) error {
 
 	// remember where we started
-	start := make([]byte, len(i.keysStack))
-	copy(start, i.keysStack)
+	if cap(i.nextStart) < len(i.keysStack) {
+		i.nextStart = make([]byte, len(i.keysStack))
+	} else {
+		i.nextStart = i.nextStart[0:len(i.keysStack)]
+	}
+	copy(i.nextStart, i.keysStack)
 
 	for true {
 		curr := i.statesStack[len(i.statesStack)-1]
 		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
 
 		if curr.Final() && i.aut.IsMatch(autCurr) &&
-			bytes.Compare(i.keysStack, start) > 0 {
+			bytes.Compare(i.keysStack, i.nextStart) > 0 {
 			// in final state greater than start key
 			return nil
 		}
