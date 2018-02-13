@@ -206,8 +206,16 @@ func (i *FSTIterator) next(lastOffset int) error {
 			autNext := i.aut.Accept(autCurr, t)
 			if i.aut.CanMatch(autNext) {
 				pos, nextAddr, v := curr.TransitionFor(t)
+
+				// the next slot in the statesStack might have an
+				// fstState instance that we can reuse
+				var nextPrealloc fstState
+				if len(i.statesStack) < cap(i.statesStack) {
+					nextPrealloc = i.statesStack[0:cap(i.statesStack)][len(i.statesStack)]
+				}
+
 				// push onto stack
-				next, err := i.f.decoder.stateAt(nextAddr, nil)
+				next, err := i.f.decoder.stateAt(nextAddr, nextPrealloc)
 				if err != nil {
 					return err
 				}
