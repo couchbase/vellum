@@ -72,6 +72,8 @@ func (b *Builder) Reset(w io.Writer) error {
 	b.registry.Reset()
 	b.lastAddr = noneAddr
 	b.encoder.reset(w)
+	b.last = nil
+	b.len = 0
 
 	err := b.encoder.start()
 	if err != nil {
@@ -183,6 +185,7 @@ func (u *unfinishedNodes) Reset() {
 	for i := 0; i < len(u.cache); i++ {
 		u.cache[i] = builderNodeUnfinished{}
 	}
+	u.pushEmpty(false)
 }
 
 func newUnfinishedNodes() *unfinishedNodes {
