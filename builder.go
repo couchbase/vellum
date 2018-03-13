@@ -212,10 +212,7 @@ func (u *unfinishedNodes) put() {
 		return
 		// do nothing, not part of cache
 	}
-	u.cache[len(u.stack)].node = nil
-	u.cache[len(u.stack)].hasLastT = false
-	u.cache[len(u.stack)].lastIn = 0
-	u.cache[len(u.stack)].lastOut = 0
+	u.cache[len(u.stack)] = builderNodeUnfinished{}
 }
 
 func (u *unfinishedNodes) findCommonPrefixAndSetOutput(key []byte,
@@ -360,14 +357,15 @@ func (n *builderNode) equiv(o *builderNode) bool {
 	if len(n.trans) != len(o.trans) {
 		return false
 	}
-	for i := range n.trans {
-		if n.trans[i].in != o.trans[i].in {
+	for i, ntrans := range n.trans {
+		otrans := o.trans[i]
+		if ntrans.in != otrans.in {
 			return false
 		}
-		if n.trans[i].addr != o.trans[i].addr {
+		if ntrans.addr != otrans.addr {
 			return false
 		}
-		if n.trans[i].out != o.trans[i].out {
+		if ntrans.out != otrans.out {
 			return false
 		}
 	}
