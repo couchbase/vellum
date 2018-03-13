@@ -37,6 +37,8 @@ type Builder struct {
 
 	encoder encoder
 	opts    *BuilderOpts
+
+	builderNodePool builderNodePool
 }
 
 const noneAddr = 1
@@ -49,11 +51,11 @@ func newBuilder(w io.Writer, opts *BuilderOpts) (*Builder, error) {
 		opts = defaultBuilderOpts
 	}
 	rv := &Builder{
-		unfinished: newUnfinishedNodes(),
-		registry:   newRegistry(opts.RegistryTableSize, opts.RegistryMRUSize),
-		opts:       opts,
-		lastAddr:   noneAddr,
+		registry: newRegistry(opts.RegistryTableSize, opts.RegistryMRUSize),
+		opts:     opts,
+		lastAddr: noneAddr,
 	}
+	rv.unfinished = newUnfinishedNodes(&rv.builderNodePool)
 
 	var err error
 	rv.encoder, err = loadEncoder(opts.Encoder, w)
@@ -68,7 +70,8 @@ func newBuilder(w io.Writer, opts *BuilderOpts) (*Builder, error) {
 }
 
 func (b *Builder) Reset(w io.Writer) error {
-	b.unfinished.Reset()
+	b.builderNodePool.reset()
+	b.unfinished.Reset(&b.builderNodePool)
 	b.registry.Reset()
 	b.lastAddr = noneAddr
 	b.encoder.reset(w)
@@ -102,7 +105,7 @@ func (b *Builder) Insert(key []byte, val uint64) error {
 		return err
 	}
 	b.copyLastKey(key)
-	b.unfinished.addSuffix(key[prefixLen:], out)
+	b.unfinished.addSuffix(key[prefixLen:], out, &b.builderNodePool)
 
 	return nil
 }
@@ -180,20 +183,20 @@ type unfinishedNodes struct {
 	cache []builderNodeUnfinished
 }
 
-func (u *unfinishedNodes) Reset() {
+func (u *unfinishedNodes) Reset(p *builderNodePool) {
 	u.stack = u.stack[:0]
 	for i := 0; i < len(u.cache); i++ {
 		u.cache[i] = builderNodeUnfinished{}
 	}
-	u.pushEmpty(false)
+	u.pushEmpty(false, p)
 }
 
-func newUnfinishedNodes() *unfinishedNodes {
+func newUnfinishedNodes(p *builderNodePool) *unfinishedNodes {
 	rv := &unfinishedNodes{
 		stack: make([]*builderNodeUnfinished, 0, 64),
 		cache: make([]builderNodeUnfinished, 64),
 	}
-	rv.pushEmpty(false)
+	rv.pushEmpty(false, p)
 	return rv
 }
 
@@ -244,9 +247,10 @@ func (u *unfinishedNodes) findCommonPrefixAndSetOutput(key []byte,
 	return i, out
 }
 
-func (u *unfinishedNodes) pushEmpty(final bool) {
+func (u *unfinishedNodes) pushEmpty(final bool, p *builderNodePool) {
 	next := u.get()
-	next.node = &builderNode{final: final}
+	next.node = p.alloc()
+	next.node.final = final
 	u.stack = append(u.stack, next)
 }
 
@@ -288,7 +292,7 @@ func (u *unfinishedNodes) topLastFreeze(addr int) {
 	u.stack[last].lastCompiled(addr)
 }
 
-func (u *unfinishedNodes) addSuffix(bs []byte, out uint64) {
+func (u *unfinishedNodes) addSuffix(bs []byte, out uint64, p *builderNodePool) {
 	if len(bs) == 0 {
 		return
 	}
@@ -298,13 +302,13 @@ func (u *unfinishedNodes) addSuffix(bs []byte, out uint64) {
 	u.stack[last].lastOut = out
 	for _, b := range bs[1:] {
 		next := u.get()
-		next.node = &builderNode{}
+		next.node = p.alloc()
 		next.hasLastT = true
 		next.lastIn = b
 		next.lastOut = 0
 		u.stack = append(u.stack, next)
 	}
-	u.pushEmpty(true)
+	u.pushEmpty(true, p)
 }
 
 type builderNodeUnfinished struct {
@@ -391,4 +395,32 @@ func outputSub(l, r uint64) uint64 {
 
 func outputCat(l, r uint64) uint64 {
 	return l + r
+}
+
+// the next builderNode to alloc() will be all[nextOuter][nextInner]
+type builderNodePool struct {
+	all       [][]builderNode
+	nextOuter int
+	nextInner int
+}
+
+func (p *builderNodePool) reset() {
+	p.nextOuter = 0
+	p.nextInner = 0
+}
+
+func (p *builderNodePool) alloc() *builderNode {
+	if p.nextOuter >= len(p.all) {
+		p.all = append(p.all, make([]builderNode, 256))
+	}
+	rv := &p.all[p.nextOuter][p.nextInner]
+	p.nextInner += 1
+	if p.nextInner >= len(p.all[p.nextOuter]) {
+		p.nextOuter += 1
+		p.nextInner = 0
+	}
+	rv.finalOutput = 0
+	rv.trans = rv.trans[:0]
+	rv.final = false
+	return rv
 }
