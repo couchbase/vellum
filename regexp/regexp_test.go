@@ -189,3 +189,9 @@ func TestRegexp(t *testing.T) {
 	}
 
 }
+
+func BenchmarkNewWildcard(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		New("my.*h")
+	}
+}

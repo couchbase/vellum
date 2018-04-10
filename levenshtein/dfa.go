@@ -15,6 +15,7 @@
 package levenshtein
 
 import (
+	"encoding/binary"
 	"fmt"
 	"unicode"
 
@@ -53,9 +54,10 @@ func (s *state) String() string {
 }
 
 type dfaBuilder struct {
-	dfa   *dfa
-	lev   *dynamicLevenshtein
-	cache map[string]int
+	dfa    *dfa
+	lev    *dynamicLevenshtein
+	cache  map[string]int
+	keyBuf []byte
 }
 
 func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
@@ -126,12 +128,24 @@ func (b *dfaBuilder) cachedState(levState []int) int {
 	return rv
 }
 
+func levStateKey(levState []int, buf []byte) []byte {
+	if cap(buf) < 8*len(levState) {
+		buf = make([]byte, 8*len(levState))
+	} else {
+		buf = buf[0 : 8*len(levState)]
+	}
+	for i, state := range levState {
+		binary.LittleEndian.PutUint64(buf[i*8:], uint64(state))
+	}
+	return buf
+}
+
 func (b *dfaBuilder) cached(levState []int) (int, bool) {
 	if !b.lev.canMatch(levState) {
 		return 0, true
 	}
-	k := fmt.Sprintf("%v", levState)
-	v, ok := b.cache[k]
+	b.keyBuf = levStateKey(levState, b.keyBuf)
+	v, ok := b.cache[string(b.keyBuf)]
 	if ok {
 		return v, true
 	}
@@ -141,7 +155,7 @@ func (b *dfaBuilder) cached(levState []int) (int, bool) {
 		match: match,
 	})
 	newV := len(b.dfa.states) - 1
-	b.cache[k] = newV
+	b.cache[string(b.keyBuf)] = newV
 	return newV, false
 }
 

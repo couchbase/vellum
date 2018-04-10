@@ -214,3 +214,15 @@ func TestLevenshtein(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkNewMarty1(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		New("marty", 1)
+	}
+}
+
+func BenchmarkNewMarty2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		New("marty", 2)
+	}
+}
