@@ -34,7 +34,7 @@ type Levenshtein struct {
 	dfa  *dfa
 }
 
-// NewLevenshtein creates a new Levenshtein automaton for the specified
+// New creates a new Levenshtein automaton for the specified
 // query string and edit distance.
 func New(query string, distance int) (*Levenshtein, error) {
 	lev := &dynamicLevenshtein{
