@@ -18,11 +18,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime/pprof"
+	"runtime/trace"
 
 	"github.com/spf13/cobra"
 )
 
-var expvarBind string
+var (
+	expvarBind   string
+	memprofile   string
+	cpuprofile   string
+	traceprofile string
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -32,6 +39,43 @@ var RootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if expvarBind != "" {
 			go http.ListenAndServe(expvarBind, nil)
+		}
+		if cpuprofile != "" {
+			f, err := os.Create(cpuprofile)
+			if err != nil {
+				return err
+			}
+			pprof.StartCPUProfile(f)
+		}
+		if traceprofile != "" {
+			f, err := os.Create(traceprofile)
+			if err != nil {
+				return err
+			}
+			if err := trace.Start(f); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if cpuprofile != "" {
+			pprof.StopCPUProfile()
+		}
+		if memprofile != "" {
+			f, err := os.Create(memprofile)
+			if err != nil {
+				return err
+			}
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				return err
+			}
+			if err := f.Close(); err != nil {
+				return err
+			}
+		}
+		if traceprofile != "" {
+			trace.Stop()
 		}
 		return nil
 	},
@@ -48,4 +92,7 @@ func Execute() {
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&expvarBind, "expvar", "", "bind address for expvar, default none")
+	RootCmd.PersistentFlags().StringVar(&cpuprofile, "cpuprofile", "", "cpuprofile output file, default none")
+	RootCmd.PersistentFlags().StringVar(&memprofile, "memprofile", "", "memprofile output file, default none")
+	RootCmd.PersistentFlags().StringVar(&traceprofile, "traceprofile", "", "traceprofile output file, default none")
 }
