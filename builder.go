@@ -127,7 +127,7 @@ func (b *Builder) Close() error {
 	if err != nil {
 		return err
 	}
-	root := b.unfinished.popRoot()
+	root := b.unfinished.popEmpty()
 	rootAddr, err := b.compile(root)
 	if err != nil {
 		return err
@@ -254,15 +254,6 @@ func (u *unfinishedNodes) pushEmpty(final bool, p *builderNodePool) {
 	next.node = p.alloc()
 	next.node.final = final
 	u.stack = append(u.stack, next)
-}
-
-func (u *unfinishedNodes) popRoot() *builderNode {
-	l := len(u.stack)
-	var unfinished *builderNodeUnfinished
-	u.stack, unfinished = u.stack[:l-1], u.stack[l-1]
-	rv := unfinished.node
-	u.put()
-	return rv
 }
 
 func (u *unfinishedNodes) popFreeze(addr int, tp *transitionPool) *builderNode {
