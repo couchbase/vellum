@@ -100,7 +100,7 @@ func instsKey(insts []uint, buf []byte) []byte {
 }
 
 func (d *dfaBuilder) cachedState(set *sparseSet) int {
-	var insts []uint
+	insts := make([]uint, 0, set.Len())
 	var isMatch bool
 	for i := uint(0); i < uint(set.Len()); i++ {
 		ip := set.Get(i)
