@@ -63,7 +63,7 @@ type dfaBuilder struct {
 func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
 	dfab := &dfaBuilder{
 		dfa: &dfa{
-			states: make([]*state, 0, 16),
+			states: make([]state, 0, 16),
 		},
 		lev:   lev,
 		cache: make(map[string]int, 1024),
@@ -150,7 +150,7 @@ func (b *dfaBuilder) cached(levState []int) (int, bool) {
 		return v, true
 	}
 	match := b.lev.isMatch(levState)
-	b.dfa.states = b.dfa.states.Push(&state{
+	b.dfa.states = append(b.dfa.states, state{
 		next:  make([]int, 256),
 		match: match,
 	})
@@ -198,7 +198,7 @@ func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to int, rang *utf8.Range
 }
 
 func (b *dfaBuilder) newState(match bool) int {
-	b.dfa.states = append(b.dfa.states, &state{
+	b.dfa.states = append(b.dfa.states, state{
 		next:  make([]int, 256),
 		match: match,
 	})
