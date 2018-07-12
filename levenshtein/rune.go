@@ -56,7 +56,8 @@ func (d *dynamicLevenshtein) canMatch(state []int) bool {
 }
 
 func (d *dynamicLevenshtein) accept(state []int, r *rune) []int {
-	next := []int{state[0] + 1}
+	next := make([]int, 0, len(d.query)+1)
+	next = append(next, state[0]+1)
 	i := 0
 	for _, c := range d.query {
 		var cost int

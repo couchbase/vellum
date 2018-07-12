@@ -188,8 +188,8 @@ func (c *compiler) c(ast *syntax.Regexp) error {
 				return err
 			}
 		}
-		splits := make([]uint, 0, ast.Max - ast.Min)
-		starts := make([]uint, 0, ast.Max - ast.Min)
+		splits := make([]uint, 0, ast.Max-ast.Min)
+		starts := make([]uint, 0, ast.Max-ast.Min)
 		for i := ast.Min; i < ast.Max; i++ {
 			splits = append(splits, c.emptySplit())
 			starts = append(starts, uint(len(c.insts)))
