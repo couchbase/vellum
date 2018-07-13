@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"unicode"
 
+	unicode_utf8 "unicode/utf8"
+
 	"github.com/couchbase/vellum/utf8"
 )
 
@@ -58,6 +60,11 @@ type dfaBuilder struct {
 	lev    *dynamicLevenshtein
 	cache  map[string]int
 	keyBuf []byte
+
+	sequences  utf8.Sequences
+	rangeStack utf8.RangeStack
+	startBytes []byte
+	endBytes   []byte
 }
 
 func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
@@ -65,8 +72,10 @@ func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
 		dfa: &dfa{
 			states: make([]state, 0, 16),
 		},
-		lev:   lev,
-		cache: make(map[string]int, 1024),
+		lev:        lev,
+		cache:      make(map[string]int, 1024),
+		startBytes: make([]byte, unicode_utf8.UTFMax),
+		endBytes:   make([]byte, unicode_utf8.UTFMax),
 	}
 	dfab.newState(false) // create state 0, invalid
 	return dfab
@@ -172,12 +181,14 @@ func (b *dfaBuilder) addMismatchUtf8States(fromSi int, levState []int) (int, []i
 	return toSi, mmState, nil
 }
 
-func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar, toChar rune) error {
-	sequences, err := utf8.NewSequences(fromChar, toChar)
+func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar, toChar rune) (
+	err error) {
+	b.sequences, b.rangeStack, err = utf8.NewSequencesPrealloc(fromChar, toChar,
+		b.sequences, b.rangeStack, b.startBytes, b.endBytes)
 	if err != nil {
 		return err
 	}
-	for _, seq := range sequences {
+	for _, seq := range b.sequences {
 		fsi := fromSi
 		for _, utf8r := range seq[:len(seq)-1] {
 			tsi := b.newState(false)
