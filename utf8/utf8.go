@@ -25,9 +25,29 @@ type Sequences []Sequence
 // NewSequences constructs a collection of Sequence which describe the
 // byte ranges covered between the start and end runes.
 func NewSequences(start, end rune) (Sequences, error) {
-	var rv Sequences
+	rv, _, err := NewSequencesPrealloc(start, end, nil, nil, nil, nil)
+	return rv, err
+}
 
-	var rangeStack rangeStack
+func NewSequencesPrealloc(start, end rune,
+	preallocSequences Sequences,
+	preallocRangeStack RangeStack,
+	preallocStartBytes, preallocEndBytes []byte) (Sequences, RangeStack, error) {
+	rv := preallocSequences[:0]
+
+	startBytes := preallocStartBytes
+	if cap(startBytes) < utf8.UTFMax {
+		startBytes = make([]byte, utf8.UTFMax)
+	}
+	startBytes = startBytes[:utf8.UTFMax]
+
+	endBytes := preallocEndBytes
+	if cap(endBytes) < utf8.UTFMax {
+		endBytes = make([]byte, utf8.UTFMax)
+	}
+	endBytes = endBytes[:utf8.UTFMax]
+
+	rangeStack := preallocRangeStack[:0]
 	rangeStack = rangeStack.Push(scalarRange{start, end})
 
 	rangeStack, r := rangeStack.Pop()
@@ -77,12 +97,10 @@ TOP:
 					}
 				}
 			}
-			start := make([]byte, utf8.UTFMax)
-			end := make([]byte, utf8.UTFMax)
-			n, m := r.encode(start, end)
-			seq, err := SequenceFromEncodedRange(start[0:n], end[0:m])
+			n, m := r.encode(startBytes, endBytes)
+			seq, err := SequenceFromEncodedRange(startBytes[0:n], endBytes[0:m])
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			rv = append(rv, seq)
 			rangeStack, r = rangeStack.Pop()
@@ -90,7 +108,7 @@ TOP:
 		}
 	}
 
-	return rv, nil
+	return rv, rangeStack, nil
 }
 
 // Sequence is a collection of Range
@@ -222,13 +240,13 @@ func (s *scalarRange) encode(start, end []byte) (int, int) {
 	return n, m
 }
 
-type rangeStack []scalarRange
+type RangeStack []scalarRange
 
-func (s rangeStack) Push(v scalarRange) rangeStack {
+func (s RangeStack) Push(v scalarRange) RangeStack {
 	return append(s, v)
 }
 
-func (s rangeStack) Pop() (rangeStack, scalarRange) {
+func (s RangeStack) Pop() (RangeStack, scalarRange) {
 	l := len(s)
 	if l < 1 {
 		return s, nilScalarRange
