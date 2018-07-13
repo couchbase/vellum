@@ -65,6 +65,7 @@ type dfaBuilder struct {
 	rangeStack utf8.RangeStack
 	startBytes []byte
 	endBytes   []byte
+	nexts      []int
 }
 
 func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
@@ -77,7 +78,7 @@ func newDfaBuilder(lev *dynamicLevenshtein) *dfaBuilder {
 		startBytes: make([]byte, unicode_utf8.UTFMax),
 		endBytes:   make([]byte, unicode_utf8.UTFMax),
 	}
-	dfab.newState(false) // create state 0, invalid
+	_, dfab.nexts = dfab.newState(false, nil) // create state 0, invalid
 	return dfab
 }
 
@@ -191,7 +192,8 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar
 	for _, seq := range b.sequences {
 		fsi := fromSi
 		for _, utf8r := range seq[:len(seq)-1] {
-			tsi := b.newState(false)
+			var tsi int
+			tsi, b.nexts = b.newState(false, b.nexts)
 			b.addUtf8Range(overwrite, fsi, tsi, utf8r)
 			fsi = tsi
 		}
@@ -208,10 +210,17 @@ func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to int, rang utf8.Range)
 	}
 }
 
-func (b *dfaBuilder) newState(match bool) int {
+func (b *dfaBuilder) newState(match bool, prealloc []int) (int, []int) {
+	if len(prealloc) < 256 {
+		prealloc = make([]int, 16384)
+	}
+	next := prealloc[0:256]
+	prealloc = prealloc[256:]
+
 	b.dfa.states = append(b.dfa.states, state{
-		next:  make([]int, 256),
+		next:  next,
 		match: match,
 	})
-	return len(b.dfa.states) - 1
+
+	return len(b.dfa.states) - 1, prealloc
 }
