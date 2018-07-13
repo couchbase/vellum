@@ -203,9 +203,10 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar
 }
 
 func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to int, rang utf8.Range) {
+	fromNext := b.dfa.states[from].next
 	for by := rang.Start; by <= rang.End; by++ {
-		if overwrite || b.dfa.states[from].next[by] == 0 {
-			b.dfa.states[from].next[by] = to
+		if overwrite || fromNext[by] == 0 {
+			fromNext[by] = to
 		}
 	}
 }
