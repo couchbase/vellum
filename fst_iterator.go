@@ -121,21 +121,23 @@ func (i *FSTIterator) pointTo(key []byte) error {
 	i.statesStack = append(i.statesStack, root)
 	i.autStatesStack = append(i.autStatesStack, autStart)
 	for j := 0; j < len(key); j++ {
+		keyJ := key[j]
 		curr := i.statesStack[len(i.statesStack)-1]
 		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
 
-		pos, nextAddr, nextVal := curr.TransitionFor(key[j])
+		pos, nextAddr, nextVal := curr.TransitionFor(keyJ)
 		if nextAddr == noneAddr {
 			// needed transition doesn't exist
 			// find last trans before the one we needed
-			for q := 0; q < curr.NumTransitions(); q++ {
-				if curr.TransitionAt(q) < key[j] {
+			numTrans := curr.NumTransitions()
+			for q := 0; q < numTrans; q++ {
+				if curr.TransitionAt(q) < keyJ {
 					maxQ = q
 				}
 			}
 			break
 		}
-		autNext := i.aut.Accept(autCurr, key[j])
+		autNext := i.aut.Accept(autCurr, keyJ)
 
 		next, err := i.f.decoder.stateAt(nextAddr, nil)
 		if err != nil {
@@ -143,7 +145,7 @@ func (i *FSTIterator) pointTo(key []byte) error {
 		}
 
 		i.statesStack = append(i.statesStack, next)
-		i.keysStack = append(i.keysStack, key[j])
+		i.keysStack = append(i.keysStack, keyJ)
 		i.keysPosStack = append(i.keysPosStack, pos)
 		i.valsStack = append(i.valsStack, nextVal)
 		i.autStatesStack = append(i.autStatesStack, autNext)
