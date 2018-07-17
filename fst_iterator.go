@@ -183,14 +183,8 @@ func (i *FSTIterator) Next() error {
 }
 
 func (i *FSTIterator) next(lastOffset int) error {
-
 	// remember where we started
-	if cap(i.nextStart) < len(i.keysStack) {
-		i.nextStart = make([]byte, len(i.keysStack))
-	} else {
-		i.nextStart = i.nextStart[0:len(i.keysStack)]
-	}
-	copy(i.nextStart, i.keysStack)
+	i.nextStart = append(i.nextStart[:0], i.keysStack...)
 
 	for true {
 		curr := i.statesStack[len(i.statesStack)-1]
