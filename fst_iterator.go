@@ -130,10 +130,10 @@ func (i *FSTIterator) pointTo(key []byte) error {
 		if nextAddr == noneAddr {
 			// needed transition doesn't exist
 			// find last trans before the one we needed
-			numTrans := curr.NumTransitions()
-			for q := 0; q < numTrans; q++ {
+			for q := curr.NumTransitions() - 1; q >= 0; q-- {
 				if curr.TransitionAt(q) < keyJ {
 					maxQ = q
+					break
 				}
 			}
 			break
