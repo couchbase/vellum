@@ -24,6 +24,12 @@ import (
 	"github.com/couchbase/vellum/utf8"
 )
 
+var sequences0ToMaxRune utf8.Sequences
+
+func init() {
+	sequences0ToMaxRune, _ = utf8.NewSequences(0, unicode.MaxRune)
+}
+
 type dfa struct {
 	states statesStack
 }
@@ -175,10 +181,7 @@ func (b *dfaBuilder) addMismatchUtf8States(fromSi int, levState []int) (int, []i
 	if toSi == 0 {
 		return 0, nil, nil
 	}
-	err := b.addUtf8RuneRange(false, fromSi, toSi, 0, unicode.MaxRune)
-	if err != nil {
-		return 0, nil, err
-	}
+	b.addUtf8Sequences(false, fromSi, toSi, sequences0ToMaxRune)
 	return toSi, mmState, nil
 }
 
