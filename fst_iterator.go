@@ -76,7 +76,8 @@ func newIterator(f *FST, startKeyInclusive, endKeyExclusive []byte,
 
 // Reset resets the Iterator' internal state to allow for iterator
 // reuse (e.g. pooling).
-func (i *FSTIterator) Reset(f *FST, startKeyInclusive, endKeyExclusive []byte, aut Automaton) error {
+func (i *FSTIterator) Reset(f *FST,
+	startKeyInclusive, endKeyExclusive []byte, aut Automaton) error {
 	if aut == nil {
 		aut = alwaysMatchAutomaton
 	}
@@ -91,14 +92,14 @@ func (i *FSTIterator) Reset(f *FST, startKeyInclusive, endKeyExclusive []byte, a
 
 // pointTo attempts to point us to the specified location
 func (i *FSTIterator) pointTo(key []byte) error {
-
 	// tried to seek before start
 	if bytes.Compare(key, i.startKeyInclusive) < 0 {
 		key = i.startKeyInclusive
 	}
 
-	// trid to see past end
-	if i.endKeyExclusive != nil && bytes.Compare(key, i.endKeyExclusive) > 0 {
+	// tried to see past end
+	if i.endKeyExclusive != nil &&
+		bytes.Compare(key, i.endKeyExclusive) > 0 {
 		key = i.endKeyExclusive
 	}
 
@@ -152,7 +153,9 @@ func (i *FSTIterator) pointTo(key []byte) error {
 		continue
 	}
 
-	if !i.statesStack[len(i.statesStack)-1].Final() || !i.aut.IsMatch(i.autStatesStack[len(i.autStatesStack)-1]) || bytes.Compare(i.keysStack, key) < 0 {
+	if !i.statesStack[len(i.statesStack)-1].Final() ||
+		!i.aut.IsMatch(i.autStatesStack[len(i.autStatesStack)-1]) ||
+		bytes.Compare(i.keysStack, key) < 0 {
 		return i.next(maxQ)
 	}
 
@@ -186,6 +189,7 @@ func (i *FSTIterator) next(lastOffset int) error {
 	// remember where we started
 	i.nextStart = append(i.nextStart[:0], i.keysStack...)
 
+OUTER:
 	for true {
 		curr := i.statesStack[len(i.statesStack)-1]
 		autCurr := i.autStatesStack[len(i.autStatesStack)-1]
@@ -200,54 +204,57 @@ func (i *FSTIterator) next(lastOffset int) error {
 		if nextOffset < curr.NumTransitions() {
 			t := curr.TransitionAt(nextOffset)
 			autNext := i.aut.Accept(autCurr, t)
-			if i.aut.CanMatch(autNext) {
-				pos, nextAddr, v := curr.TransitionFor(t)
-
-				// the next slot in the statesStack might have an
-				// fstState instance that we can reuse
-				var nextPrealloc fstState
-				if len(i.statesStack) < cap(i.statesStack) {
-					nextPrealloc = i.statesStack[0:cap(i.statesStack)][len(i.statesStack)]
-				}
-
-				// push onto stack
-				next, err := i.f.decoder.stateAt(nextAddr, nextPrealloc)
-				if err != nil {
-					return err
-				}
-				i.statesStack = append(i.statesStack, next)
-				i.keysStack = append(i.keysStack, t)
-				i.keysPosStack = append(i.keysPosStack, pos)
-				i.valsStack = append(i.valsStack, v)
-				i.autStatesStack = append(i.autStatesStack, autNext)
-				lastOffset = -1
-
-				// check to see if new keystack might have gone too far
-				if i.endKeyExclusive != nil && bytes.Compare(i.keysStack, i.endKeyExclusive) >= 0 {
-					return ErrIteratorDone
-				}
-			} else {
+			if !i.aut.CanMatch(autNext) {
 				lastOffset = nextOffset
+				continue OUTER
 			}
 
-			continue
+			pos, nextAddr, v := curr.TransitionFor(t)
+
+			// the next slot in the statesStack might have an
+			// fstState instance that we can reuse
+			var nextPrealloc fstState
+			if len(i.statesStack) < cap(i.statesStack) {
+				nextPrealloc = i.statesStack[0:cap(i.statesStack)][len(i.statesStack)]
+			}
+
+			// push onto stack
+			next, err := i.f.decoder.stateAt(nextAddr, nextPrealloc)
+			if err != nil {
+				return err
+			}
+
+			i.statesStack = append(i.statesStack, next)
+			i.keysStack = append(i.keysStack, t)
+			i.keysPosStack = append(i.keysPosStack, pos)
+			i.valsStack = append(i.valsStack, v)
+			i.autStatesStack = append(i.autStatesStack, autNext)
+
+			lastOffset = -1
+
+			// check to see if new keystack might have gone too far
+			if i.endKeyExclusive != nil &&
+				bytes.Compare(i.keysStack, i.endKeyExclusive) >= 0 {
+				return ErrIteratorDone
+			}
+
+			continue OUTER
 		}
 
-		if len(i.statesStack) > 1 {
-			// no transitions, and still room to pop
-			i.statesStack = i.statesStack[:len(i.statesStack)-1]
-			i.keysStack = i.keysStack[:len(i.keysStack)-1]
-			lastOffset = i.keysPosStack[len(i.keysPosStack)-1]
-
-			i.keysPosStack = i.keysPosStack[:len(i.keysPosStack)-1]
-			i.valsStack = i.valsStack[:len(i.valsStack)-1]
-			i.autStatesStack = i.autStatesStack[:len(i.autStatesStack)-1]
-			continue
-		} else {
+		if len(i.statesStack) <= 1 {
 			// stack len is 1 (root), can't go back further, we're done
 			break
 		}
 
+		// no transitions, and still room to pop
+		i.statesStack = i.statesStack[:len(i.statesStack)-1]
+		i.keysStack = i.keysStack[:len(i.keysStack)-1]
+
+		lastOffset = i.keysPosStack[len(i.keysPosStack)-1]
+
+		i.keysPosStack = i.keysPosStack[:len(i.keysPosStack)-1]
+		i.valsStack = i.valsStack[:len(i.valsStack)-1]
+		i.autStatesStack = i.autStatesStack[:len(i.autStatesStack)-1]
 	}
 
 	return ErrIteratorDone
@@ -267,6 +274,7 @@ func (i *FSTIterator) Seek(key []byte) error {
 
 // Close will free any resources held by this iterator.
 func (i *FSTIterator) Close() error {
-	// at the moment we don't do anything, but wanted this for API completeness
+	// at the moment we don't do anything,
+	// but wanted this for API completeness
 	return nil
 }
