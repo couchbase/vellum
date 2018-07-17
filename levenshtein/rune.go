@@ -41,14 +41,9 @@ func (d *dynamicLevenshtein) isMatch(state []int) bool {
 }
 
 func (d *dynamicLevenshtein) canMatch(state []int) bool {
-	if len(state) > 0 {
-		min := state[0]
-		for i := 1; i < len(state); i++ {
-			if state[i] < min {
-				min = state[i]
-			}
-		}
-		if uint(min) <= d.distance {
+	distance := int(d.distance)
+	for _, v := range state {
+		if v <= distance {
 			return true
 		}
 	}
