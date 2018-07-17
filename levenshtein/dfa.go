@@ -111,7 +111,7 @@ func (b *dfaBuilder) build() (*dfa, error) {
 			levNext := b.lev.accept(levState, &r)
 			nextSi := b.cachedState(levNext)
 			if nextSi != 0 {
-				err = b.addUtf8Sequences(true, dfaSi, nextSi, r, r)
+				err = b.addUtf8RuneRange(true, dfaSi, nextSi, r, r)
 				if err != nil {
 					return nil, err
 				}
@@ -175,21 +175,30 @@ func (b *dfaBuilder) addMismatchUtf8States(fromSi int, levState []int) (int, []i
 	if toSi == 0 {
 		return 0, nil, nil
 	}
-	err := b.addUtf8Sequences(false, fromSi, toSi, 0, unicode.MaxRune)
+	err := b.addUtf8RuneRange(false, fromSi, toSi, 0, unicode.MaxRune)
 	if err != nil {
 		return 0, nil, err
 	}
 	return toSi, mmState, nil
 }
 
-func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar, toChar rune) (
+func (b *dfaBuilder) addUtf8RuneRange(overwrite bool, fromSi, toSi int,
+	fromChar, toChar rune) (
 	err error) {
 	b.sequences, b.rangeStack, err = utf8.NewSequencesPrealloc(fromChar, toChar,
 		b.sequences, b.rangeStack, b.startBytes, b.endBytes)
 	if err != nil {
 		return err
 	}
-	for _, seq := range b.sequences {
+
+	b.addUtf8Sequences(overwrite, fromSi, toSi, b.sequences)
+
+	return nil
+}
+
+func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int,
+	sequences utf8.Sequences) {
+	for _, seq := range sequences {
 		fsi := fromSi
 		for _, utf8r := range seq[:len(seq)-1] {
 			var tsi int
@@ -199,7 +208,6 @@ func (b *dfaBuilder) addUtf8Sequences(overwrite bool, fromSi, toSi int, fromChar
 		}
 		b.addUtf8Range(overwrite, fsi, toSi, seq[len(seq)-1])
 	}
-	return nil
 }
 
 func (b *dfaBuilder) addUtf8Range(overwrite bool, from, to int, rang utf8.Range) {
