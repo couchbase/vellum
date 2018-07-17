@@ -189,6 +189,8 @@ func (i *FSTIterator) next(lastOffset int) error {
 	// remember where we started
 	i.nextStart = append(i.nextStart[:0], i.keysStack...)
 
+	nextOffset := lastOffset + 1
+
 OUTER:
 	for true {
 		curr := i.statesStack[len(i.statesStack)-1]
@@ -200,13 +202,15 @@ OUTER:
 			return nil
 		}
 
-		nextOffset := lastOffset + 1
-		if nextOffset < curr.NumTransitions() {
+		numTrans := curr.NumTransitions()
+
+	INNER:
+		for nextOffset < numTrans {
 			t := curr.TransitionAt(nextOffset)
 			autNext := i.aut.Accept(autCurr, t)
 			if !i.aut.CanMatch(autNext) {
-				lastOffset = nextOffset
-				continue OUTER
+				nextOffset += 1
+				continue INNER
 			}
 
 			pos, nextAddr, v := curr.TransitionFor(t)
@@ -230,14 +234,13 @@ OUTER:
 			i.valsStack = append(i.valsStack, v)
 			i.autStatesStack = append(i.autStatesStack, autNext)
 
-			lastOffset = -1
-
 			// check to see if new keystack might have gone too far
 			if i.endKeyExclusive != nil &&
 				bytes.Compare(i.keysStack, i.endKeyExclusive) >= 0 {
 				return ErrIteratorDone
 			}
 
+			nextOffset = 0
 			continue OUTER
 		}
 
@@ -250,7 +253,7 @@ OUTER:
 		i.statesStack = i.statesStack[:len(i.statesStack)-1]
 		i.keysStack = i.keysStack[:len(i.keysStack)-1]
 
-		lastOffset = i.keysPosStack[len(i.keysPosStack)-1]
+		nextOffset = i.keysPosStack[len(i.keysPosStack)-1] + 1
 
 		i.keysPosStack = i.keysPosStack[:len(i.keysPosStack)-1]
 		i.valsStack = i.valsStack[:len(i.valsStack)-1]
