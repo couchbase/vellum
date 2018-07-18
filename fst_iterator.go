@@ -268,11 +268,7 @@ OUTER:
 // seek operation would go past the last key, or outside the configured
 // startKeyInclusive/endKeyExclusive then ErrIteratorDone is returned.
 func (i *FSTIterator) Seek(key []byte) error {
-	err := i.pointTo(key)
-	if err != nil {
-		return err
-	}
-	return nil
+	return i.pointTo(key)
 }
 
 // Close will free any resources held by this iterator.
