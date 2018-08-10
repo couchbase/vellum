@@ -59,6 +59,10 @@ func NewWithLimit(expr string, size uint) (*Regexp, error) {
 	if err != nil {
 		return nil, err
 	}
+	return NewParsedWithLimit(expr, parsed, size)
+}
+
+func NewParsedWithLimit(expr string, parsed *syntax.Regexp, size uint) (*Regexp, error) {
 	compiler := newCompiler(size)
 	insts, err := compiler.compile(parsed)
 	if err != nil {
