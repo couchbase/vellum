@@ -35,6 +35,8 @@ var ErrNoLazy = fmt.Errorf("lazy quantifiers are not allowed")
 // too many instructions
 var ErrCompiledTooBig = fmt.Errorf("too many instructions")
 
+var DefaultLimit = uint(10 * (1 << 20))
+
 // Regexp implements the vellum.Automaton interface for matcing a user
 // specified regular expression.
 type Regexp struct {
@@ -47,7 +49,7 @@ type Regexp struct {
 // compiled finite state automaton.  If this size is exceeded,
 // ErrCompiledTooBig will be returned.
 func New(expr string) (*Regexp, error) {
-	return NewWithLimit(expr, 10*(1<<20))
+	return NewWithLimit(expr, DefaultLimit)
 }
 
 // NewRegexpWithLimit creates a new Regular Expression automaton with
