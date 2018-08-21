@@ -15,6 +15,7 @@
 package vellum
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -582,5 +583,48 @@ func TestMerge(t *testing.T) {
 	}
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("expected %v, got: %v", want, got)
+	}
+}
+
+func BenchmarkKey4000K(b *testing.B) {
+	benchmarkBigKey(b, 4000000)
+}
+
+func BenchmarkKey1000K(b *testing.B) {
+	benchmarkBigKey(b, 1000000)
+}
+
+func BenchmarkKey100K(b *testing.B) {
+	benchmarkBigKey(b, 100000)
+}
+
+func BenchmarkKey10K(b *testing.B) {
+	benchmarkBigKey(b, 10000)
+}
+
+func BenchmarkKey1K(b *testing.B) {
+	benchmarkBigKey(b, 1000)
+}
+
+func benchmarkBigKey(b *testing.B, n int) {
+	big := bytes.Repeat([]byte("a"), n)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		b, err := New(ioutil.Discard, nil)
+		if err != nil {
+			break
+		}
+
+		err = b.Insert(big, 0)
+		if err != nil {
+			break
+		}
+
+		err = b.Close()
+		if err != nil {
+			break
+		}
 	}
 }
