@@ -29,14 +29,16 @@ func init() {
 
 type decoderV1 struct {
 	data []byte
-	root uint64
-	len  uint64
 }
 
 func newDecoderV1(data []byte) *decoderV1 {
 	return &decoderV1{
 		data: data,
 	}
+}
+
+func (d *decoderV1) clear() {
+	d.data = nil
 }
 
 func (d *decoderV1) getRoot() int {
@@ -55,6 +57,10 @@ func (d *decoderV1) getLen() int {
 	footer := d.data[len(d.data)-footerSizeV1:]
 	dlen := binary.LittleEndian.Uint64(footer)
 	return int(dlen)
+}
+
+func (d *decoderV1) reload(data []byte) {
+	d.data = data
 }
 
 func (d *decoderV1) stateAt(addr int, prealloc fstState) (fstState, error) {

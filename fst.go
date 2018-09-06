@@ -16,6 +16,7 @@ package vellum
 
 import (
 	"io"
+	"sync"
 
 	"github.com/willf/bitset"
 )
@@ -33,20 +34,28 @@ type FST struct {
 	decoder decoder
 }
 
-func new(data []byte, f io.Closer) (rv *FST, err error) {
-	rv = &FST{
-		data: data,
-		f:    f,
-	}
+var fstPool = sync.Pool{New: func() interface{} { return &FST{} }}
 
-	rv.ver, rv.typ, err = decodeHeader(data)
+func new(data []byte, f io.Closer) (*FST, error) {
+	rv := fstPool.Get().(*FST)
+	rv.data = data
+	rv.f = f
+
+	ver, typ, err := decodeHeader(data)
 	if err != nil {
 		return nil, err
 	}
 
-	rv.decoder, err = loadDecoder(rv.ver, rv.data)
-	if err != nil {
-		return nil, err
+	if rv.ver == 0 || rv.decoder == nil || // first use
+		(rv.ver != ver || rv.typ != typ) {
+		rv.decoder, err = loadDecoder(ver, rv.data)
+		if err != nil {
+			return nil, err
+		}
+		rv.ver = ver
+		rv.typ = typ
+	} else {
+		rv.decoder.reload(rv.data)
 	}
 
 	rv.len = rv.decoder.getLen()
@@ -121,7 +130,10 @@ func (f *FST) Close() error {
 		}
 	}
 	f.data = nil
-	f.decoder = nil
+	f.decoder.clear()
+	f.f = nil
+	f.len = 0
+	fstPool.Put(f)
 	return nil
 }
 
@@ -237,18 +249,27 @@ func (a addrStack) Pop() (addrStack, int) {
 	return a[:l-1], a[l-1]
 }
 
-// Reader() returns a Reader instance that a single thread may use to
-// retrieve data from the FST
-func (f *FST) Reader() (*Reader, error) {
-	return &Reader{f: f}, nil
-}
-
 // A Reader is meant for a single threaded use
 type Reader struct {
 	f        *FST
 	prealloc fstStateV1
 }
 
+var fstReaderPool = sync.Pool{New: func() interface{} { return &Reader{} }}
+
+// Reader() returns a Reader instance that a single thread may use to
+// retrieve data from the FST
+func (f *FST) Reader() (*Reader, error) {
+	rv := fstReaderPool.Get().(*Reader)
+	rv.f = f
+	return rv, nil
+}
+
 func (r *Reader) Get(input []byte) (uint64, bool, error) {
 	return r.f.get(input, &r.prealloc)
+}
+
+func (r *Reader) Close() {
+	*r = Reader{}
+	fstReaderPool.Put(r)
 }

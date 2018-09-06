@@ -47,8 +47,10 @@ func registerEncoder(ver int, cons encoderConstructor) {
 }
 
 type decoder interface {
+	clear()
 	getRoot() int
 	getLen() int
+	reload(data []byte)
 	stateAt(addr int, prealloc fstState) (fstState, error)
 }
 
