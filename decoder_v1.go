@@ -37,10 +37,6 @@ func newDecoderV1(data []byte) *decoderV1 {
 	}
 }
 
-func (d *decoderV1) clear() {
-	d.data = nil
-}
-
 func (d *decoderV1) getRoot() int {
 	if len(d.data) < footerSizeV1 {
 		return noneAddr
@@ -57,10 +53,6 @@ func (d *decoderV1) getLen() int {
 	footer := d.data[len(d.data)-footerSizeV1:]
 	dlen := binary.LittleEndian.Uint64(footer)
 	return int(dlen)
-}
-
-func (d *decoderV1) reload(data []byte) {
-	d.data = data
 }
 
 func (d *decoderV1) stateAt(addr int, prealloc fstState) (fstState, error) {
