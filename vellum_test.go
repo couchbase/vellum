@@ -138,6 +138,16 @@ func TestRoundTripSimple(t *testing.T) {
 	if exists {
 		t.Errorf("expected key 'mo' to not exist, does")
 	}
+
+	minKey, _ := fst.GetMinKey()
+	if string(minKey) != "mon" {
+		t.Errorf("expected minKey 'mon', got %v", string(minKey))
+	}
+
+	maxKey, _ := fst.GetMaxKey()
+	if string(maxKey) != "tye" {
+		t.Errorf("expected maxKey 'tye', got %v", string(maxKey))
+	}
 }
 
 func TestRoundTripThousand(t *testing.T) {
