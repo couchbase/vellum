@@ -62,6 +62,28 @@ type NFAState struct {
 	InTranspose bool
 }
 
+type NFAStates []NFAState
+
+func (ns NFAStates) Len() int {
+	return len(ns)
+}
+
+func (ns NFAStates) Less(i, j int) bool {
+	if ns[i].Offset != ns[j].Offset {
+		return ns[i].Offset < ns[j].Offset
+	}
+
+	if ns[i].Distance != ns[j].Distance {
+		return ns[i].Distance < ns[j].Distance
+	}
+
+	return !ns[i].InTranspose && ns[j].InTranspose
+}
+
+func (ns NFAStates) Swap(i, j int) {
+	ns[i], ns[j] = ns[j], ns[i]
+}
+
 func (ns *NFAState) imply(other NFAState) bool {
 	transposeImply := ns.InTranspose
 	if !other.InTranspose {
@@ -112,17 +134,7 @@ func (ms *MultiState) normalize() uint32 {
 		ms.states[i].Offset -= minOffset
 	}
 
-	sort.Slice(ms.states, func(i, j int) bool {
-		if ms.states[i].Offset != ms.states[j].Offset {
-			return ms.states[i].Offset < ms.states[j].Offset
-		}
-
-		if ms.states[i].Distance != ms.states[j].Distance {
-			return ms.states[i].Distance < ms.states[j].Distance
-		}
-
-		return ms.states[i].InTranspose == ms.states[j].InTranspose
-	})
+	sort.Sort(NFAStates(ms.states))
 
 	return minOffset
 }
@@ -253,27 +265,16 @@ func (la *LevenshteinNFA) simpleTransition(state NFAState,
 }
 
 func (la *LevenshteinNFA) transition(cState *MultiState,
-	dSate *MultiState, scv uint64) {
-	dSate.Clear()
+	dState *MultiState, scv uint64) {
+	dState.Clear()
 	mask := (uint64(1) << la.msDiameter()) - uint64(1)
 
 	for _, state := range cState.states {
 		cv := (scv >> state.Offset) & mask
-		la.simpleTransition(state, cv, dSate)
+		la.simpleTransition(state, cv, dState)
 	}
 
-	sort.Slice(dSate.states, func(i, j int) bool {
-		if dSate.states[i].Offset != dSate.states[j].Offset {
-			return dSate.states[i].Offset < dSate.states[j].Offset
-		}
-
-		if dSate.states[i].Distance != dSate.states[j].Distance {
-			return dSate.states[i].Distance < dSate.states[j].Distance
-		}
-
-		return dSate.states[i].InTranspose == dSate.states[j].InTranspose
-	})
-
+	sort.Sort(NFAStates(dState.states))
 }
 
 func (la *LevenshteinNFA) computeDistance(query, other []rune) Distance {
