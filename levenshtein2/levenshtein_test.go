@@ -21,9 +21,13 @@ import (
 func TestLevenshtein(t *testing.T) {
 
 	hash := make(map[uint8]LevenshteinAutomatonBuilder, 4)
-	hash[0] = NewLevenshteinAutomatonBuilder(0, false)
-	hash[1] = NewLevenshteinAutomatonBuilder(1, false)
-	hash[2] = NewLevenshteinAutomatonBuilder(2, false)
+	for i := 0; i < 3; i++ {
+		lb, err := NewLevenshteinAutomatonBuilder(uint8(i), false)
+		if err != nil {
+			t.Errorf("NewLevenshteinAutomatonBuilder(%d, false) failed, err: %v", i, err)
+		}
+		hash[uint8(i)] = *lb
+	}
 
 	tests := []struct {
 		desc     string
@@ -229,7 +233,11 @@ func TestLevenshtein(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			l := hash[uint8(test.distance)].pDfa.buildDfa(test.query, test.distance, false)
+			l, err := hash[uint8(test.distance)].pDfa.buildDfa(test.query, test.distance, false)
+			if err != nil {
+				t.Errorf("buildDfa(%s, %d, false) failed, err: %v", test.query,
+					test.distance, err)
+			}
 
 			s := l.Start()
 			for _, b := range test.seq {
@@ -306,10 +314,16 @@ func TestLevenshteinNfa(t *testing.T) {
 
 func TestLevenshteinParametricDfa(t *testing.T) {
 	lev := newLevenshtein(1, true)
-	pDfa := fromNfa(lev)
-	testStr := "abc" //defghijlmnopqrstuvwxyzabcdefghijlmnopqrstuvwxyz" +
-	//"abcdefghijlmnopqrstuvwxyzabcdefghijlmnopqrstuvwxyz"
-	dfa := pDfa.buildDfa(testStr, 1, false)
+	pDfa, err := fromNfa(lev)
+	if err != nil {
+		t.Errorf("fromNfa err: %v", err)
+	}
+
+	testStr := "abc"
+	dfa, err := pDfa.buildDfa(testStr, 1, false)
+	if err != nil {
+		t.Errorf("buildDfa(%s, 1, false) failed, err: %v", testStr, err)
+	}
 
 	rd := dfa.eval([]byte("abc"))
 	if rd.distance() != 0 {
@@ -346,7 +360,10 @@ func TestLevenshteinParametricDfa(t *testing.T) {
 		"abcdefghijlmnopqrstuvwxyz" +
 		"abcdefghijlmnopqrstuvwxyz"
 
-	dfa = pDfa.buildDfa(testStr, 1, false)
+	dfa, err = pDfa.buildDfa(testStr, 1, false)
+	if err != nil {
+		t.Errorf("buildDfa(%s, 1, false) failed, err: %v", testStr, err)
+	}
 
 	sample1 := "abcdefghijlmnopqrstuvwxyz" +
 		"abcdefghijlnopqrstuvwxyz" +
@@ -377,8 +394,16 @@ func TestDamerau(t *testing.T) {
 
 func TestLevenshteinDfa(t *testing.T) {
 	nfa := newLevenshtein(2, false)
-	pDfa := fromNfa(nfa)
-	dfa := pDfa.buildDfa("abcabcaaabc", 2, false)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	dfa, err := pDfa.buildDfa("abcabcaaabc", 2, false)
+	if err != nil {
+		t.Errorf("buildDfa(abcabcaaabc, 1, false) failed, err: %v", err)
+	}
+
 	if dfa.numStates() != 273 {
 		t.Errorf("expected number of states: 273, actual: %d", dfa.numStates())
 	}
@@ -386,8 +411,16 @@ func TestLevenshteinDfa(t *testing.T) {
 
 func TestUtf8Simple(t *testing.T) {
 	nfa := newLevenshtein(1, false)
-	pDfa := fromNfa(nfa)
-	dfa := pDfa.buildDfa("あ", 1, false)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	dfa, err := pDfa.buildDfa("あ", 1, false)
+	if err != nil {
+		t.Errorf("buildDfa(あ, 1, false) failed, err: %v", err)
+	}
+
 	ed := dfa.eval([]byte("あ"))
 	if ed.distance() != 0 {
 		t.Errorf("expected distance 0, actual: %d", ed.distance())
@@ -397,8 +430,15 @@ func TestUtf8Simple(t *testing.T) {
 func TestSimple(t *testing.T) {
 	query := "abcdef"
 	nfa := newLevenshtein(2, false)
-	pDfa := fromNfa(nfa)
-	dfa := pDfa.buildDfa(query, 1, false)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	dfa, err := pDfa.buildDfa(query, 1, false)
+	if err != nil {
+		t.Errorf("buildDfa(%s, 1, false) failed, err: %v", query, err)
+	}
 
 	ed := dfa.eval([]byte(query))
 	if ed.distance() != 0 {
@@ -419,12 +459,18 @@ func TestSimple(t *testing.T) {
 	}
 }
 
-
 func TestJapanese(t *testing.T) {
 	query := "寿司は焦げられない"
 	nfa := newLevenshtein(2, false)
-	pDfa := fromNfa(nfa)
-	dfa := pDfa.buildDfa(query, 2, false)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	dfa, err := pDfa.buildDfa(query, 2, false)
+	if err != nil {
+		t.Errorf("buildDfa(%s, 2, false) failed, err: %v", query, err)
+	}
 
 	ed := dfa.eval([]byte(query))
 	if ed.distance() != 0 {
@@ -450,8 +496,15 @@ func TestJapanese(t *testing.T) {
 func TestJapaneseEnglish(t *testing.T) {
 	query := "寿a"
 	nfa := newLevenshtein(1, false)
-	pDfa := fromNfa(nfa)
-	dfa := pDfa.buildDfa(query, 1, false)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	dfa, err := pDfa.buildDfa(query, 1, false)
+	if err != nil {
+		t.Errorf("buildDfa(%s, 1, false) failed, err: %v", query, err)
+	}
 
 	ed := dfa.eval([]byte(query))
 	if ed.distance() != 0 {
@@ -461,5 +514,25 @@ func TestJapaneseEnglish(t *testing.T) {
 	ed = dfa.eval([]byte("a"))
 	if ed.distance() != 1 {
 		t.Errorf("expected distance 0, actual: %d", ed.distance())
+	}
+}
+
+func TestTooManyStatesError(t *testing.T) {
+	nfa := newLevenshtein(3, true)
+	pDfa, err := fromNfa(nfa)
+	if err != nil {
+		t.Errorf("fromNfa failed, err: %v", err)
+	}
+
+	// query of length 139 characters won't generate 10K states as against
+	// the current levenshtein limit of query length 50.
+	lengthQuery := "1234567890123456789012345678901234567890123456789" + // 50 chars
+		"1234567890123456789012345678901234567890123456789" + // 50 chars
+		"1234567890123456789012345678901234567890" // 40 chars (total 140)
+
+	_, err = pDfa.buildDfa(lengthQuery, 1, false)
+	if err != ErrTooManyStates {
+		t.Errorf("buildDfa(%s, 1, false) expected to fail with err: %v",
+			lengthQuery, ErrTooManyStates)
 	}
 }

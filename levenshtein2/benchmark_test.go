@@ -21,11 +21,11 @@ import (
 )
 
 func BenchmarkNewEvalEditDistance1(b *testing.B) {
-	lb := NewLevenshteinAutomatonBuilder(1, true)
+	lb, _ := NewLevenshteinAutomatonBuilder(1, true)
 
 	query := "coucibase"
 	for i := 0; i < b.N; i++ {
-		dfa := lb.BuildDfa("couchbase", 1)
+		dfa, _ := lb.BuildDfa("couchbase", 1)
 		ed := dfa.eval([]byte(query))
 		if ed.distance() != 1 {
 			b.Errorf("expected distance 1, actual: %d", ed.distance())
@@ -35,11 +35,11 @@ func BenchmarkNewEvalEditDistance1(b *testing.B) {
 }
 
 func BenchmarkNewEvalEditDistance2(b *testing.B) {
-	lb := NewLevenshteinAutomatonBuilder(2, false)
+	lb, _ := NewLevenshteinAutomatonBuilder(2, false)
 
 	query := "couchbasefts"
 	for i := 0; i < b.N; i++ {
-		dfa := lb.BuildDfa("couchbases", 2)
+		dfa, _ := lb.BuildDfa("couchbases", 2)
 		ed := dfa.eval([]byte(query))
 		if ed.distance() != 2 {
 			b.Errorf("expected distance 2, actual: %d", ed.distance())
@@ -48,11 +48,11 @@ func BenchmarkNewEvalEditDistance2(b *testing.B) {
 }
 
 func BenchmarkNewEditDistance1(b *testing.B) {
-	lb := NewLevenshteinAutomatonBuilder(1, true)
+	lb, _ := NewLevenshteinAutomatonBuilder(1, true)
 
 	query := "coucibase"
 	for i := 0; i < b.N; i++ {
-		dfa := lb.BuildDfa("couchbase", 1)
+		dfa, _ := lb.BuildDfa("couchbase", 1)
 
 		state := dfa.initialState()
 		for _, b := range []byte(query) {
@@ -67,12 +67,12 @@ func BenchmarkNewEditDistance1(b *testing.B) {
 }
 
 func BenchmarkNewEditDistance2(b *testing.B) {
-	lb := NewLevenshteinAutomatonBuilder(2, false)
+	lb, _ := NewLevenshteinAutomatonBuilder(2, false)
 
 	query := "couchbasefts"
 	for i := 0; i < b.N; i++ {
+		dfa, _ := lb.BuildDfa("couchbases", 2)
 
-		dfa := lb.BuildDfa("couchbases", 2)
 		state := dfa.initialState()
 		for _, b := range []byte(query) {
 			state = dfa.transition(state, b)
@@ -88,6 +88,7 @@ func BenchmarkOlderEditDistance1(b *testing.B) {
 	query := "coucibase"
 	for i := 0; i < b.N; i++ {
 		l, _ := levenshtein.New("couchbase", 1)
+
 		s := l.Start()
 		for _, b := range []byte(query) {
 			s = l.Accept(s, b)
@@ -103,6 +104,7 @@ func BenchmarkOlderEditDistance2(b *testing.B) {
 	query := "couchbasefts"
 	for i := 0; i < b.N; i++ {
 		l, _ := levenshtein.New("couchbases", 2)
+
 		s := l.Start()
 		for _, b := range []byte(query) {
 			s = l.Accept(s, b)

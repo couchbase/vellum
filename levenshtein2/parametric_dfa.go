@@ -17,7 +17,7 @@ package levenshtein2
 import (
 	"crypto/md5"
 	"encoding/json"
-	"log"
+	"fmt"
 	"math"
 )
 
@@ -183,7 +183,8 @@ func (pdfa *ParametricDFA) computeDistance(left, right string) Distance {
 	return pdfa.getDistance(state, uint32(len(left)))
 }
 
-func (pdfa *ParametricDFA) buildDfa(query string, distance uint8, prefix bool) *DFA {
+func (pdfa *ParametricDFA) buildDfa(query string, distance uint8,
+	prefix bool) (*DFA, error) {
 	qLen := uint32(len([]rune(query)))
 	alphabet := queryChars(query)
 
@@ -191,14 +192,15 @@ func (pdfa *ParametricDFA) buildDfa(query string, distance uint8, prefix bool) *
 	maxNumStates := psi.maxNumStates()
 	deadEndStateID := psi.getOrAllocate(newParametricState())
 	if deadEndStateID != 0 {
-		return nil
+		return nil, fmt.Errorf("Invalid dead end state")
 	}
 
 	initialStateID := psi.getOrAllocate(pdfa.initialState())
 	dfaBuilder := withMaxStates(uint32(maxNumStates))
 	mask := uint32((1 << pdfa.diameter) - 1)
 
-	for stateID := 0; stateID < math.MaxUint32; stateID++ {
+	var stateID int
+	for stateID = 0; stateID < StateLimit; stateID++ {
 		if stateID == psi.numStates() {
 			break
 		}
@@ -214,8 +216,7 @@ func (pdfa *ParametricDFA) buildDfa(query string, distance uint8, prefix bool) *
 			stateBuilder, err := dfaBuilder.addState(uint32(stateID), defSuccessorID, distance)
 
 			if err != nil {
-				log.Panicf("parametric_dfa: buildDfa, err: %v", err)
-				return nil
+				return nil, fmt.Errorf("parametric_dfa: buildDfa, err: %v", err)
 			}
 
 			alphabet.resetNext()
@@ -234,14 +235,17 @@ func (pdfa *ParametricDFA) buildDfa(query string, distance uint8, prefix bool) *
 				chr, cv, err = alphabet.next()
 			}
 		}
+	}
 
+	if stateID == StateLimit {
+		return nil, ErrTooManyStates
 	}
 
 	dfaBuilder.setInitialState(initialStateID)
-	return dfaBuilder.build(distance)
+	return dfaBuilder.build(distance), nil
 }
 
-func fromNfa(nfa *LevenshteinNFA) *ParametricDFA {
+func fromNfa(nfa *LevenshteinNFA) (*ParametricDFA, error) {
 	lookUp := newHash()
 	lookUp.getOrAllocate(*newMultiState())
 	initialState := nfa.initialStates()
@@ -257,10 +261,12 @@ func fromNfa(nfa *LevenshteinNFA) *ParametricDFA {
 	}
 
 	transitions := make([]Transition, 0, numChi*int(msDiameter))
-	for stateID := 0; stateID < math.MaxUint32; stateID++ {
+	var stateID int
+	for stateID = 0; stateID < StateLimit; stateID++ {
 		if stateID == len(lookUp.items) {
 			break
 		}
+
 		for _, chi := range chiValues {
 			destMs := newMultiState()
 
@@ -277,6 +283,10 @@ func fromNfa(nfa *LevenshteinNFA) *ParametricDFA {
 				deltaOffset: translation,
 			})
 		}
+	}
+
+	if stateID == StateLimit {
+		return nil, ErrTooManyStates
 	}
 
 	ns := len(lookUp.items)
@@ -297,7 +307,7 @@ func fromNfa(nfa *LevenshteinNFA) *ParametricDFA {
 		maxDistance:      maxDistance,
 		transitionStride: uint32(numChi),
 		distance:         distances,
-	}
+	}, nil
 }
 
 type hash struct {
