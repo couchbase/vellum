@@ -162,14 +162,22 @@ func (b *Builder) compileFrom(iState int) error {
 func (b *Builder) compile(node *builderNode) (int, error) {
 	if node.final && len(node.trans) == 0 &&
 		node.finalOutput == 0 {
+		// We're done with this node so its safe to put it back in the pool.
 		b.builderNodePool.Put(node)
 		return 0, nil
 	}
 	found, addr, entry := b.registry.entry(node)
 	if found {
+		// This node already existed in the registry (and thus the registry
+		// did not assume ownership of it) so its safe to put it back in
+		// the pool.
 		b.builderNodePool.Put(node)
 		return addr, nil
 	}
+	// If the node was not found in the registry, then the registry will
+	// have assumed ownership of it and is responsible for returning it
+	// to the pool.
+
 	addr, err := b.encoder.encodeState(node, b.lastAddr)
 	if err != nil {
 		return 0, err
