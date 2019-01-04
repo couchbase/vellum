@@ -638,3 +638,59 @@ func benchmarkBigKey(b *testing.B, n int) {
 		}
 	}
 }
+
+func TestMaxWithSubstring(t *testing.T) {
+	var buf bytes.Buffer
+	builder, err := New(&buf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = builder.Insert([]byte("1"), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = builder.Insert([]byte("11"), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = builder.Insert([]byte("9"), 9)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = builder.Insert([]byte("99"), 99)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = builder.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fst, err := Load(buf.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mink, err := fst.GetMinKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(mink) != "1" {
+		t.Fatalf("expected max key 1, got %s", string(mink))
+	}
+
+	maxk, err := fst.GetMaxKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(maxk) != "99" {
+		t.Fatalf("expected max key 99, got %s", string(maxk))
+	}
+}
