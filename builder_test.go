@@ -66,7 +66,6 @@ func TestBuilderSimple(t *testing.T) {
 	if err != nil {
 		t.Errorf("got error closing set builder: %v", err)
 	}
-	b.Reset(ioutil.Discard)
 }
 
 func TestBuilderSharedPrefix(t *testing.T) {
@@ -234,9 +233,6 @@ func loadWords(path string) ([]string, error) {
 var thousandTestWords []string
 
 func BenchmarkBuilder(b *testing.B) {
-	//fmt.Println(unsafe.Sizeof(builderNode{}))
-	// fmt.Println(unsafe.Sizeof(transition{}))
-	// panic("hmm")
 	dataset := thousandTestWords
 	randomThousandVals := randomValues(dataset)
 

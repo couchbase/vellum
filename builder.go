@@ -142,30 +142,22 @@ func (b *Builder) Close() error {
 
 func (b *Builder) compileFrom(iState int) error {
 	addr := noneAddr
-	// var lastNode *builderNode
 	for iState+1 < len(b.unfinished.stack) {
-		// b.builderNodePool.Put(lastNode)
 		var node *builderNode
 		if addr == noneAddr {
 			node = b.unfinished.popEmpty()
-			// returnToPool = true
 		} else {
 			node = b.unfinished.popFreeze(addr)
-			// returnToPool = true
 		}
 		var err error
 		addr, err = b.compile(node)
 		if err != nil {
 			return nil
 		}
-		// lastNode = node
 	}
 	b.unfinished.topLastFreeze(addr)
-	// b.builderNodePool.Put(lastNode)
 	return nil
 }
-
-var finalCount = 0
 
 func (b *Builder) compile(node *builderNode) (int, error) {
 	if node.final && len(node.trans) == 0 &&
@@ -274,10 +266,7 @@ func (u *unfinishedNodes) pushEmpty(final bool) {
 	u.stack = append(u.stack, next)
 }
 
-var popRootCount = 0
-
 func (u *unfinishedNodes) popRoot() *builderNode {
-	popRootCount++
 	l := len(u.stack)
 	var unfinished *builderNodeUnfinished
 	u.stack, unfinished = u.stack[:l-1], u.stack[l-1]

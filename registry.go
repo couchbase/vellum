@@ -37,23 +37,15 @@ func newRegistry(p *builderNodePool, tableSize, mruSize int) *registry {
 	return rv
 }
 
-var notEmptyCount = 0
-
 func (r *registry) Reset() {
 	var empty registryCell
 	for i := range r.table {
-		if r.table[i].node != nil {
-			notEmptyCount++
-		}
 		r.builderNodePool.Put(r.table[i].node)
 		r.table[i] = empty
 	}
 }
 
-var entryCount = 0
-
 func (r *registry) entry(node *builderNode) (bool, int, *registryCell) {
-	entryCount++
 	if len(r.table) == 0 {
 		return false, 0, nil
 	}
@@ -85,9 +77,6 @@ func (r *registry) hash(b *builderNode) int {
 
 type registryCache []registryCell
 
-var matchCount = 0
-var insertCount = 0
-
 func (r registryCache) entry(node *builderNode, pool *builderNodePool) (bool, int, *registryCell) {
 	if len(r) == 1 {
 		if r[0].node != nil && r[0].node.equiv(node) {
@@ -101,7 +90,6 @@ func (r registryCache) entry(node *builderNode, pool *builderNodePool) (bool, in
 		if r[i].node != nil && r[i].node.equiv(node) {
 			addr := r[i].addr
 			r.promote(i)
-			matchCount++
 			return true, addr, nil
 		}
 	}
