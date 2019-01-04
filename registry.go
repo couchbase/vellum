@@ -19,6 +19,13 @@ type registryCell struct {
 	node *builderNode
 }
 
+// Registry is used as a form of LRU so that the number of nodes that need to be kept
+// in memory is reduced. When the builder is compiling the FST and is presented with
+// compiling a given node, it can check the registry to see if an equivalent node has
+// already been compiled. If so, the registry will return the address of the already
+// compiled node and the builder can use that. If an equivalent node has not already
+// been compiled (or was, but has since been evicted from the LRU), the builder will
+// recompile it into the encoder and then add it to the registry for future use.
 type registry struct {
 	builderNodePool *builderNodePool
 	table           []registryCell
@@ -77,6 +84,10 @@ func (r *registry) hash(b *builderNode) int {
 
 type registryCache []registryCell
 
+// The registry is responsible for returning BuilderNodes that it controls to the BuilderNodePool once
+// they are evicted. As a result, all the codepaths in the entry method that return false (entry was not
+// found and the registry is assuming ownership of this node) will return the corresponding evicted node to
+// the builderNodePool.
 func (r registryCache) entry(node *builderNode, pool *builderNodePool) (bool, int, *registryCell) {
 	if len(r) == 1 {
 		if r[0].node != nil && r[0].node.equiv(node) {
@@ -93,6 +104,7 @@ func (r registryCache) entry(node *builderNode, pool *builderNodePool) (bool, in
 			return true, addr, nil
 		}
 	}
+
 	// no match
 	last := len(r) - 1
 	pool.Put(r[last].node)

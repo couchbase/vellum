@@ -23,6 +23,10 @@ var defaultBuilderOpts = &BuilderOpts{
 	Encoder:           1,
 	RegistryTableSize: 10000,
 	RegistryMRUSize:   2,
+	BuilderNodePoolingConfig: BuilderNodePoolingConfig{
+		MaxSize:           10000,
+		MaxTransitionSize: 100,
+	},
 }
 
 // A Builder is used to build a new FST.  When possible data is
@@ -50,7 +54,8 @@ func newBuilder(w io.Writer, opts *BuilderOpts) (*Builder, error) {
 	if opts == nil {
 		opts = defaultBuilderOpts
 	}
-	builderNodePool := &builderNodePool{}
+
+	builderNodePool := newBuilderNodePool(opts.BuilderNodePoolingConfig)
 	rv := &Builder{
 		unfinished:      newUnfinishedNodes(builderNodePool),
 		registry:        newRegistry(builderNodePool, opts.RegistryTableSize, opts.RegistryMRUSize),
@@ -83,6 +88,7 @@ func (b *Builder) Reset(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -156,12 +162,22 @@ func (b *Builder) compileFrom(iState int) error {
 func (b *Builder) compile(node *builderNode) (int, error) {
 	if node.final && len(node.trans) == 0 &&
 		node.finalOutput == 0 {
+		// We're done with this node so its safe to put it back in the pool.
+		b.builderNodePool.Put(node)
 		return 0, nil
 	}
 	found, addr, entry := b.registry.entry(node)
 	if found {
+		// This node already existed in the registry (and thus the registry
+		// did not assume ownership of it) so its safe to put it back in
+		// the pool.
+		b.builderNodePool.Put(node)
 		return addr, nil
 	}
+	// If the node was not found in the registry, then the registry will
+	// have assumed ownership of it and is responsible for returning it
+	// to the pool.
+
 	addr, err := b.encoder.encodeState(node, b.lastAddr)
 	if err != nil {
 		return 0, err
@@ -416,37 +432,63 @@ func outputCat(l, r uint64) uint64 {
 	return l + r
 }
 
+// BuilderNodePoolingConfig is the configuration struct for the BuilderNodePool.
+// Note that unsafe.SizeOf(transition{}) is 24 bytes and unsafe.SizeOf(BuilderNode{})
+// is 48 bytes so the amount of memory used by the pool should be approximately
+// MaxSize * (48 + 24 * MaxTransitionSize) not including the extra space required
+// by the G.C.
+type BuilderNodePoolingConfig struct {
+	// Maximum number of builder nodes can be retained in the pool.
+	MaxSize int
+	// Maximum size of the transitions array for an individual builder node.
+	MaxTransitionSize int
+}
+
 // builderNodePool pools builderNodes using a singly linked list.
 //
-// NB: builderNode lifecylce is described by the following interactions -
-// +------------------------+                            +----------------------+
-// |    Unfinished Nodes    |      Transfer once         |        Registry      |
-// |(not frozen builderNode)|-----builderNode is ------->| (frozen builderNode) |
-// +------------------------+      marked frozen         +----------------------+
-//              ^                                                     |
-//              |                                                     |
-//              |                                                   Put()
-//              | Get() on        +-------------------+             when
-//              +-new char--------| builderNode Pool  |<-----------evicted
-//                                +-------------------+
+// The lifecycle is as follows:
+//
+// 1. Builder retrieves a node from the pool using Get() whenever it needs one.
+// 2. After a node is compiled it is either:
+//     a. Discarded and immediately returned to the pool.
+//     b. Transferred to the registry (which assumes ownership of it) and will
+//        return it to the pool when it evicts the node to make room for another,
+//        or when the entire registry is Reset().
 type builderNodePool struct {
-	head *builderNode
+	config BuilderNodePoolingConfig
+	size   int
+	head   *builderNode
+}
+
+func newBuilderNodePool(config BuilderNodePoolingConfig) *builderNodePool {
+	// Pool will lazy alloc.
+	return &builderNodePool{
+		config: config,
+	}
 }
 
 func (p *builderNodePool) Get() *builderNode {
 	if p.head == nil {
-		return &builderNode{}
+		return &builderNode{
+			trans: make([]transition, 0, 10),
+		}
 	}
 	head := p.head
 	p.head = p.head.next
+	p.size--
 	return head
 }
 
 func (p *builderNodePool) Put(v *builderNode) {
-	if v == nil {
+	if v == nil ||
+		p.size >= p.config.MaxSize ||
+		cap(v.trans) > p.config.MaxTransitionSize {
+		// Don't store nil or allow the pool to violate its config.
 		return
 	}
+
 	v.reset()
 	v.next = p.head
 	p.head = v
+	p.size++
 }
