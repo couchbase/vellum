@@ -50,7 +50,8 @@ func newBuilder(w io.Writer, opts *BuilderOpts) (*Builder, error) {
 	if opts == nil {
 		opts = defaultBuilderOpts
 	}
-	builderNodePool := &builderNodePool{}
+
+	builderNodePool := newBuilderNodePool(100000)
 	rv := &Builder{
 		unfinished:      newUnfinishedNodes(builderNodePool),
 		registry:        newRegistry(builderNodePool, opts.RegistryTableSize, opts.RegistryMRUSize),
@@ -83,6 +84,7 @@ func (b *Builder) Reset(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -136,30 +138,40 @@ func (b *Builder) Close() error {
 
 func (b *Builder) compileFrom(iState int) error {
 	addr := noneAddr
+	// var lastNode *builderNode
 	for iState+1 < len(b.unfinished.stack) {
+		// b.builderNodePool.Put(lastNode)
 		var node *builderNode
 		if addr == noneAddr {
 			node = b.unfinished.popEmpty()
+			// returnToPool = true
 		} else {
 			node = b.unfinished.popFreeze(addr)
+			// returnToPool = true
 		}
 		var err error
 		addr, err = b.compile(node)
 		if err != nil {
 			return nil
 		}
+		// lastNode = node
 	}
 	b.unfinished.topLastFreeze(addr)
+	// b.builderNodePool.Put(lastNode)
 	return nil
 }
+
+var finalCount = 0
 
 func (b *Builder) compile(node *builderNode) (int, error) {
 	if node.final && len(node.trans) == 0 &&
 		node.finalOutput == 0 {
+		b.builderNodePool.Put(node)
 		return 0, nil
 	}
 	found, addr, entry := b.registry.entry(node)
 	if found {
+		b.builderNodePool.Put(node)
 		return addr, nil
 	}
 	addr, err := b.encoder.encodeState(node, b.lastAddr)
@@ -258,7 +270,10 @@ func (u *unfinishedNodes) pushEmpty(final bool) {
 	u.stack = append(u.stack, next)
 }
 
+var popRootCount = 0
+
 func (u *unfinishedNodes) popRoot() *builderNode {
+	popRootCount++
 	l := len(u.stack)
 	var unfinished *builderNodeUnfinished
 	u.stack, unfinished = u.stack[:l-1], u.stack[l-1]
@@ -430,12 +445,27 @@ func outputCat(l, r uint64) uint64 {
 //              +-new char--------| builderNode Pool  |<-----------evicted
 //                                +-------------------+
 type builderNodePool struct {
-	head *builderNode
+	gets   int
+	puts   int
+	allocs int
+	head   *builderNode
+}
+
+func newBuilderNodePool(size int) *builderNodePool {
+	pool := &builderNodePool{}
+	for i := 0; i < size; i++ {
+		pool.Put(&builderNode{trans: make([]transition, 0, 10)})
+	}
+	return pool
 }
 
 func (p *builderNodePool) Get() *builderNode {
+	p.gets++
 	if p.head == nil {
-		return &builderNode{}
+		p.allocs++
+		return &builderNode{
+			trans: make([]transition, 0, 10),
+		}
 	}
 	head := p.head
 	p.head = p.head.next
@@ -446,6 +476,7 @@ func (p *builderNodePool) Put(v *builderNode) {
 	if v == nil {
 		return
 	}
+	p.puts++
 	v.reset()
 	v.next = p.head
 	p.head = v
