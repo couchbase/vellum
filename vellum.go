@@ -54,9 +54,10 @@ var ErrIteratorDone = errors.New("iterator-done")
 // BuilderOpts is a structure to let advanced users customize the behavior
 // of the builder and some aspects of the generated FST.
 type BuilderOpts struct {
-	Encoder           int
-	RegistryTableSize int
-	RegistryMRUSize   int
+	Encoder                  int
+	RegistryTableSize        int
+	RegistryMRUSize          int
+	BuilderNodePoolingConfig BuilderNodePoolingConfig
 }
 
 // New returns a new Builder which will stream out the

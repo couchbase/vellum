@@ -55,7 +55,6 @@ var entryCount = 0
 func (r *registry) entry(node *builderNode) (bool, int, *registryCell) {
 	entryCount++
 	if len(r.table) == 0 {
-		panic("bad")
 		return false, 0, nil
 	}
 	bucket := r.hash(node)

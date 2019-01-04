@@ -234,6 +234,9 @@ func loadWords(path string) ([]string, error) {
 var thousandTestWords []string
 
 func BenchmarkBuilder(b *testing.B) {
+	//fmt.Println(unsafe.Sizeof(builderNode{}))
+	// fmt.Println(unsafe.Sizeof(transition{}))
+	// panic("hmm")
 	dataset := thousandTestWords
 	randomThousandVals := randomValues(dataset)
 
