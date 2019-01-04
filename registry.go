@@ -86,7 +86,7 @@ type registryCache []registryCell
 
 // The registry is responsible for returning BuilderNodes that it controls to the BuilderNodePool once
 // they are evicted. As a result, all the codepaths in the entry method that return false (entry was not
-// found and the registry is assuming ownership of this node) will return the corresponding evicted to to
+// found and the registry is assuming ownership of this node) will return the corresponding evicted node to
 // the builderNodePool.
 func (r registryCache) entry(node *builderNode, pool *builderNodePool) (bool, int, *registryCell) {
 	if len(r) == 1 {
