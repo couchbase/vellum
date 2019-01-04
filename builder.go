@@ -479,8 +479,6 @@ func (p *builderNodePool) Get() *builderNode {
 	return head
 }
 
-var counter = 0
-
 func (p *builderNodePool) Put(v *builderNode) {
 	if v == nil ||
 		p.size >= p.config.MaxSize ||
