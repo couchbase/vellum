@@ -21,11 +21,11 @@ import (
 
 var defaultBuilderOpts = &BuilderOpts{
 	Encoder:           1,
-	RegistryTableSize: 10000,
+	RegistryTableSize: 1000,
 	RegistryMRUSize:   2,
 	BuilderNodePoolingConfig: BuilderNodePoolingConfig{
 		MaxSize:           10000,
-		MaxTransitionSize: 100,
+		MaxTransitionSize: 32,
 	},
 }
 
@@ -469,9 +469,7 @@ func newBuilderNodePool(config BuilderNodePoolingConfig) *builderNodePool {
 
 func (p *builderNodePool) Get() *builderNode {
 	if p.head == nil {
-		return &builderNode{
-			trans: make([]transition, 0, 10),
-		}
+		return &builderNode{}
 	}
 	head := p.head
 	p.head = p.head.next
