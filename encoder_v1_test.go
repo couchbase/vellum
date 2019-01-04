@@ -46,7 +46,7 @@ func TestEncoderStart(t *testing.T) {
 		t.Fatal(err)
 	}
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestEncoderStateOneNextWithCommonInput(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestEncoderStateOneNextWithUncommonInput(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -153,7 +153,7 @@ func TestEncoderStateOneNotNextWithCommonInputNoValue(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -194,7 +194,7 @@ func TestEncoderStateOneNotNextWithUncommonInputNoValue(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +228,7 @@ func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -237,7 +237,7 @@ func TestEncoderStateOneNotNextWithCommonInputWithValue(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -280,7 +280,7 @@ func TestEncoderStateOneNotNextWithUncommonInputWithValue(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestEncoderStateManyWithNoValues(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -331,7 +331,7 @@ func TestEncoderStateManyWithNoValues(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +379,7 @@ func TestEncoderStateManyWithValues(t *testing.T) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -388,7 +388,7 @@ func TestEncoderStateManyWithValues(t *testing.T) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -437,7 +437,7 @@ func testEncoderStateNTransitions(t *testing.T, n int) {
 	e := newEncoderV1(&buf)
 
 	// pretend we're at a position in the file
-	e.bw.counter = 64
+	e.counter = 64
 
 	// now encode the curr state
 	_, err := e.encodeState(curr, 64)
@@ -446,7 +446,7 @@ func testEncoderStateNTransitions(t *testing.T, n int) {
 	}
 
 	// manually flush
-	err = e.bw.Flush()
+	err = e.w.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
