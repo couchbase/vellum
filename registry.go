@@ -47,7 +47,9 @@ func newRegistry(p *builderNodePool, tableSize, mruSize int) *registry {
 func (r *registry) Reset() {
 	var empty registryCell
 	for i := range r.table {
-		r.builderNodePool.Put(r.table[i].node)
+		if r.table[i].node != nil {
+			r.builderNodePool.Put(r.table[i].node)
+		}
 		r.table[i] = empty
 	}
 }
