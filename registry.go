@@ -19,6 +19,13 @@ type registryCell struct {
 	node *builderNode
 }
 
+// Registry is used as a form of LRU so that the number of nodes that need to be kept
+// in memory is reduced. When the builder is compiling the FST and is presented with
+// compiling a given node, it can check the registry to see if an equivalent node has
+// already been compiled. If so, the registry will return the address of the already
+// compiled node and the builder can use that. If an equivalent node has not already
+// been compiled (or was, but has since been evicted from the LRU), the builder will
+// recompile it into the encoder and then add it to the registry for future use.
 type registry struct {
 	builderNodePool *builderNodePool
 	table           []registryCell

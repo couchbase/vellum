@@ -446,17 +446,14 @@ type BuilderNodePoolingConfig struct {
 
 // builderNodePool pools builderNodes using a singly linked list.
 //
-// NB: builderNode lifecylce is described by the following interactions -
-// +------------------------+                            +----------------------+
-// |    Unfinished Nodes    |      Transfer once         |        Registry      |
-// |(not frozen builderNode)|-----builderNode is ------->| (frozen builderNode) |
-// +------------------------+      marked frozen         +----------------------+
-//              ^                                                     |
-//              |                                                     |
-//              |                                                   Put()
-//              | Get() on        +-------------------+             when
-//              +-new char--------| builderNode Pool  |<-----------evicted
-//                                +-------------------+
+// The lifecycle is as follows:
+//
+// 1. Builder retrieves a node from the pool using Get() whenever it needs one.
+// 2. After a node is compiled it is either:
+//     a. Discarded and immediately returned to the pool.
+//     b. Transferred to the registry (which assumes ownership of it) and will
+//        return it to the pool when it evicts the node to make room for another,
+//        or when the entire registry is Reset().
 type builderNodePool struct {
 	config BuilderNodePoolingConfig
 	size   int
