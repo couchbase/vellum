@@ -24,6 +24,13 @@ var defaultBuilderOpts = &BuilderOpts{
 	RegistryTableSize: 1000,
 	RegistryMRUSize:   2,
 	BuilderNodePoolingConfig: BuilderNodePoolingConfig{
+		// This value should always be significantly larger than
+		// RegistryTableSize * RegistryMRUSize because that defines
+		// how many items can be stored in the registry, and if the
+		// pools MaxSize is not much larger than that, then all the
+		// BuilderNodes will end up stuck in the registry and not
+		// returned to the pool which will cause the building process
+		// to begin allocating a lot.
 		MaxSize:           10000,
 		MaxTransitionSize: 32,
 	},
