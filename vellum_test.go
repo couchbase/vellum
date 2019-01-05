@@ -188,7 +188,10 @@ func testRoundTripThousand(t *testing.T, b *Builder) {
 		}
 	}()
 
-	b.Reset(f)
+	err = b.Reset(f)
+	if err != nil {
+		t.Fatalf("error resetting builder: %v", err)
+	}
 
 	dataset := thousandTestWords
 	randomThousandVals := randomValues(dataset)

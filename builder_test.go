@@ -243,7 +243,12 @@ func BenchmarkBuilder(b *testing.B) {
 		b.Fatalf("error creating builder: %v", err)
 	}
 	for i := 0; i < b.N; i++ {
-		builder.Reset(ioutil.Discard)
+		err = builder.Reset(ioutil.Discard)
+		if err != nil {
+			if err != nil {
+				b.Fatalf("error reseting builder: %v", err)
+			}
+		}
 		err = insertStrings(builder, dataset, randomThousandVals)
 		if err != nil {
 			b.Fatalf("error inserting thousand words: %v", err)
