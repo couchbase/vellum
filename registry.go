@@ -47,7 +47,12 @@ func newRegistry(p *builderNodePool, tableSize, mruSize int) *registry {
 func (r *registry) Reset() {
 	var empty registryCell
 	for i := range r.table {
-		r.builderNodePool.Put(r.table[i].node)
+		if r.table[i].node != nil {
+			// Only try and return to the pool if the node actually exists to
+			// avoid excessive function call overhead in the scenario where many
+			// of the cells are empty.
+			r.builderNodePool.Put(r.table[i].node)
+		}
 		r.table[i] = empty
 	}
 }
