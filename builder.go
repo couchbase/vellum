@@ -21,7 +21,7 @@ import (
 
 var defaultBuilderOpts = &BuilderOpts{
 	Encoder:           1,
-	RegistryTableSize: 1000,
+	RegistryTableSize: 10000,
 	RegistryMRUSize:   2,
 	BuilderNodePoolingConfig: BuilderNodePoolingConfig{
 		// This value should always be significantly larger than
@@ -31,7 +31,7 @@ var defaultBuilderOpts = &BuilderOpts{
 		// BuilderNodes will end up stuck in the registry and not
 		// returned to the pool which will cause the building process
 		// to begin allocating a lot.
-		MaxSize:           10000,
+		MaxSize:           100000,
 		MaxTransitionSize: 32,
 	},
 }
