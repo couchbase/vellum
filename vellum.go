@@ -57,6 +57,7 @@ type BuilderOpts struct {
 	Encoder                  int
 	RegistryTableSize        int
 	RegistryMRUSize          int
+	UnfinishedNodesStackSize int
 	BuilderNodePoolingConfig BuilderNodePoolingConfig
 }
 
