@@ -441,9 +441,10 @@ func outputCat(l, r uint64) uint64 {
 
 // BuilderNodePoolingConfig is the configuration struct for the BuilderNodePool.
 // Note that unsafe.SizeOf(transition{}) is 24 bytes and unsafe.SizeOf(BuilderNode{})
-// is 48 bytes so the amount of memory used by the pool should be approximately
+// is 48 bytes so the maximum amount of memory used by the pool should be approximately
 // MaxSize * (48 + 24 * MaxTransitionSize) not including the extra space required
-// by the G.C.
+// by the G.C. Note if an F.S.T construction never requires this many BuilderNodes then
+// the maximum size of the pool will never be reached as it is allocated lazily.
 type BuilderNodePoolingConfig struct {
 	// Maximum number of builder nodes can be retained in the pool.
 	MaxSize int
