@@ -15,7 +15,6 @@
 package vellum
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -34,33 +33,27 @@ func init() {
 }
 
 type encoderV1 struct {
-	// bw *writer
-	w       *bufio.Writer
-	counter int
+	bw *writer
 }
 
 func newEncoderV1(w io.Writer) *encoderV1 {
 	return &encoderV1{
-		// bw: newWriter(w),
-		w: bufio.NewWriter(w),
+		bw: newWriter(w),
 	}
 }
 
 func (e *encoderV1) reset(w io.Writer) {
-	e.w.Reset(w)
-	// e.bw.Reset(w)
+	e.bw.Reset(w)
 }
 
 func (e *encoderV1) start() error {
 	header := make([]byte, headerSize)
 	binary.LittleEndian.PutUint64(header, versionV1)
 	binary.LittleEndian.PutUint64(header[8:], uint64(0)) // type
-	// n, err := e.bw.Write(header)
-	n, err := e.w.Write(header)
+	n, err := e.bw.Write(header)
 	if err != nil {
 		return err
 	}
-	e.counter += n
 	if n != headerSize {
 		return fmt.Errorf("short write of header %d/%d", n, headerSize)
 	}
@@ -79,46 +72,27 @@ func (e *encoderV1) encodeState(s *builderNode, lastAddr int) (int, error) {
 }
 
 func (e *encoderV1) encodeStateOne(s *builderNode) (int, error) {
-	start := uint64(e.counter)
+	start := uint64(e.bw.counter)
 	outPackSize := 0
 	if s.trans[0].out != 0 {
 		outPackSize = packedSize(s.trans[0].out)
-		v := s.trans[0].out
-		n := outPackSize
-		// err := e.bw.WritePackedUintIn(s.trans[0].out, outPackSize)
-		// if err != nil {
-		// 	return 0, err
-		// }
-		for shift := uint(0); shift < uint(n*8); shift += 8 {
-			err := e.w.WriteByte(byte(v >> shift))
-			if err != nil {
-				return 0, err
-			}
-			e.counter++
+		err := e.bw.WritePackedUintIn(s.trans[0].out, outPackSize)
+		if err != nil {
+			return 0, err
 		}
 	}
 	delta := deltaAddr(start, uint64(s.trans[0].addr))
 	transPackSize := packedSize(delta)
-	// err := e.bw.WritePackedUintIn(delta, transPackSize)
-	// if err != nil {
-	// 	return 0, err
-	// }
-	v := delta
-	n := transPackSize
-	for shift := uint(0); shift < uint(n*8); shift += 8 {
-		err := e.w.WriteByte(byte(v >> shift))
-		if err != nil {
-			return 0, err
-		}
-		e.counter++
-	}
-
-	packSize := encodePackSize(transPackSize, outPackSize)
-	err := e.w.WriteByte(packSize)
+	err := e.bw.WritePackedUintIn(delta, transPackSize)
 	if err != nil {
 		return 0, err
 	}
-	e.counter++
+
+	packSize := encodePackSize(transPackSize, outPackSize)
+	err = e.bw.WriteByte(packSize)
+	if err != nil {
+		return 0, err
+	}
 
 	return e.encodeStateOneFinish(s, 0)
 }
@@ -128,23 +102,21 @@ func (e *encoderV1) encodeStateOneFinish(s *builderNode, next byte) (int, error)
 
 	// not a common input
 	if enc == 0 {
-		err := e.w.WriteByte(s.trans[0].in)
+		err := e.bw.WriteByte(s.trans[0].in)
 		if err != nil {
 			return 0, err
 		}
-		e.counter++
 	}
-	err := e.w.WriteByte(oneTransition | next | enc)
+	err := e.bw.WriteByte(oneTransition | next | enc)
 	if err != nil {
 		return 0, err
 	}
-	e.counter++
 
-	return e.counter - 1, nil
+	return e.bw.counter - 1, nil
 }
 
 func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
-	start := uint64(e.counter)
+	start := uint64(e.bw.counter)
 	transPackSize := 0
 	outPackSize := packedSize(s.finalOutput)
 	anyOutputs := s.finalOutput != 0
@@ -167,34 +139,16 @@ func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
 	if anyOutputs {
 		// output final value
 		if s.final {
-			// err := e.bw.WritePackedUintIn(s.finalOutput, outPackSize)
-			// if err != nil {
-			// 	return 0, err
-			// }
-			v := s.finalOutput
-			n := outPackSize
-			for shift := uint(0); shift < uint(n*8); shift += 8 {
-				err := e.w.WriteByte(byte(v >> shift))
-				if err != nil {
-					return 0, err
-				}
-				e.counter++
+			err := e.bw.WritePackedUintIn(s.finalOutput, outPackSize)
+			if err != nil {
+				return 0, err
 			}
 		}
 		// output transition values (in reverse)
 		for j := len(s.trans) - 1; j >= 0; j-- {
-			// err := e.bw.WritePackedUintIn(s.trans[j].out, outPackSize)
-			// if err != nil {
-			// 	return 0, err
-			// }
-			v := s.trans[j].out
-			n := outPackSize
-			for shift := uint(0); shift < uint(n*8); shift += 8 {
-				err := e.w.WriteByte(byte(v >> shift))
-				if err != nil {
-					return 0, err
-				}
-				e.counter++
+			err := e.bw.WritePackedUintIn(s.trans[j].out, outPackSize)
+			if err != nil {
+				return 0, err
 			}
 		}
 	}
@@ -202,36 +156,25 @@ func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
 	// output transition dests (in reverse)
 	for j := len(s.trans) - 1; j >= 0; j-- {
 		delta := deltaAddr(start, uint64(s.trans[j].addr))
-		// err := e.bw.WritePackedUintIn(delta, transPackSize)
-		// if err != nil {
-		// 	return 0, err
-		// }
-		v := delta
-		n := transPackSize
-		for shift := uint(0); shift < uint(n*8); shift += 8 {
-			err := e.w.WriteByte(byte(v >> shift))
-			if err != nil {
-				return 0, err
-			}
-			e.counter++
+		err := e.bw.WritePackedUintIn(delta, transPackSize)
+		if err != nil {
+			return 0, err
 		}
 	}
 
 	// output transition keys (in reverse)
 	for j := len(s.trans) - 1; j >= 0; j-- {
-		err := e.w.WriteByte(s.trans[j].in)
+		err := e.bw.WriteByte(s.trans[j].in)
 		if err != nil {
 			return 0, err
 		}
-		e.counter++
 	}
 
 	packSize := encodePackSize(transPackSize, outPackSize)
-	err := e.w.WriteByte(packSize)
+	err := e.bw.WriteByte(packSize)
 	if err != nil {
 		return 0, err
 	}
-	e.counter++
 
 	numTrans := encodeNumTrans(len(s.trans))
 
@@ -241,17 +184,15 @@ func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
 		if len(s.trans) == 256 {
 			// this wouldn't fit in single byte, but reuse value 1
 			// which would have always fit in the edge header instead
-			err = e.w.WriteByte(1)
+			err = e.bw.WriteByte(1)
 			if err != nil {
 				return 0, err
 			}
-			e.counter++
 		} else {
-			err = e.w.WriteByte(byte(len(s.trans)))
+			err = e.bw.WriteByte(byte(len(s.trans)))
 			if err != nil {
 				return 0, err
 			}
-			e.counter++
 		}
 	}
 
@@ -259,28 +200,26 @@ func (e *encoderV1) encodeStateMany(s *builderNode) (int, error) {
 	if s.final {
 		numTrans |= stateFinal
 	}
-	err = e.w.WriteByte(numTrans)
+	err = e.bw.WriteByte(numTrans)
 	if err != nil {
 		return 0, err
 	}
-	e.counter++
 
-	return e.counter - 1, nil
+	return e.bw.counter - 1, nil
 }
 
 func (e *encoderV1) finish(count, rootAddr int) error {
 	footer := make([]byte, footerSizeV1)
 	binary.LittleEndian.PutUint64(footer, uint64(count))        // root addr
 	binary.LittleEndian.PutUint64(footer[8:], uint64(rootAddr)) // root addr
-	n, err := e.w.Write(footer)
+	n, err := e.bw.Write(footer)
 	if err != nil {
 		return err
 	}
-	e.counter += n
 	if n != footerSizeV1 {
 		return fmt.Errorf("short write of footer %d/%d", n, footerSizeV1)
 	}
-	err = e.w.Flush()
+	err = e.bw.Flush()
 	if err != nil {
 		return err
 	}
