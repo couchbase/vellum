@@ -176,7 +176,7 @@ func (b *Builder) compile(node *builderNode) (int, error) {
 	}
 	// If the node was not found in the registry, then the registry will
 	// have assumed ownership of it and is responsible for returning it
-	// to the pool.
+	// to the pool (assuming the registry is not configured with size 0).
 
 	addr, err := b.encoder.encodeState(node, b.lastAddr)
 	if err != nil {
@@ -184,7 +184,16 @@ func (b *Builder) compile(node *builderNode) (int, error) {
 	}
 
 	b.lastAddr = addr
-	entry.addr = addr
+	// Entry can be nil when the registry table if configured to be size zero, so
+	// even if the registry should have taken ownership of the node and returned
+	// an entry, it will have no room to do so and will return a nil entry.
+	if entry != nil {
+		entry.addr = addr
+	} else {
+		// Safe to pool because the registry didn't create an entry for the node which
+		// means it didn't take ownership.
+		b.builderNodePool.Put(node)
+	}
 	return addr, nil
 }
 
