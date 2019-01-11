@@ -68,6 +68,51 @@ func TestBuilderSimple(t *testing.T) {
 	}
 }
 
+// TestBuilderSimpleSizeZeroRegistry is a regression test against a panic
+// that would occur when the table size was 0.
+func TestBuilderSimpleSizeZeroRegistry(t *testing.T) {
+	// Creates a copy.
+	opts := *defaultBuilderOpts
+	opts.RegistryTableSize = 0
+
+	b, err := New(ioutil.Discard, &opts)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+
+	// add our first string
+	err = b.Insert([]byte("jul"), 0)
+	if err != nil {
+		t.Errorf("got error inserting string: %v", err)
+	}
+	// expect len to be 1
+	if b.len != 1 {
+		t.Errorf("expected node count to be 1, got %v", b.len)
+	}
+
+	// try to add a value out of order (not allowed)
+	err = b.Insert([]byte("abc"), 0)
+	if err == nil {
+		t.Errorf("expected err, got nil")
+	}
+
+	// add a second string
+	err = b.Insert([]byte("mar"), 0)
+	if err != nil {
+		t.Errorf("got error inserting string: %v", err)
+	}
+	// expect len to grow by 1
+	if b.len != 2 {
+		t.Errorf("expected node count to be 2, got %v", b.len)
+	}
+
+	// now close the builder
+	err = b.Close()
+	if err != nil {
+		t.Errorf("got error closing set builder: %v", err)
+	}
+}
+
 func TestBuilderSharedPrefix(t *testing.T) {
 	b, err := New(ioutil.Discard, nil)
 	if err != nil {
