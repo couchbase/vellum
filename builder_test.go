@@ -27,45 +27,8 @@ func init() {
 	thousandTestWords, _ = loadWords("data/words-1000.txt")
 }
 
-// this simple test case only has a shared final state
-// it also tests out of order insert
 func TestBuilderSimple(t *testing.T) {
-	b, err := New(ioutil.Discard, nil)
-	if err != nil {
-		t.Fatalf("error creating builder: %v", err)
-	}
-
-	// add our first string
-	err = b.Insert([]byte("jul"), 0)
-	if err != nil {
-		t.Errorf("got error inserting string: %v", err)
-	}
-	// expect len to be 1
-	if b.len != 1 {
-		t.Errorf("expected node count to be 1, got %v", b.len)
-	}
-
-	// try to add a value out of order (not allowed)
-	err = b.Insert([]byte("abc"), 0)
-	if err == nil {
-		t.Errorf("expected err, got nil")
-	}
-
-	// add a second string
-	err = b.Insert([]byte("mar"), 0)
-	if err != nil {
-		t.Errorf("got error inserting string: %v", err)
-	}
-	// expect len to grow by 1
-	if b.len != 2 {
-		t.Errorf("expected node count to be 2, got %v", b.len)
-	}
-
-	// now close the builder
-	err = b.Close()
-	if err != nil {
-		t.Errorf("got error closing set builder: %v", err)
-	}
+	testBuilderSimple(t, nil)
 }
 
 // TestBuilderSimpleSizeZeroRegistry is a regression test against a panic
@@ -75,7 +38,13 @@ func TestBuilderSimpleSizeZeroRegistry(t *testing.T) {
 	opts := *defaultBuilderOpts
 	opts.RegistryTableSize = 0
 
-	b, err := New(ioutil.Discard, &opts)
+	testBuilderSimple(t, &opts)
+}
+
+// this simple test case only has a shared final state
+// it also tests out of order insert
+func testBuilderSimple(t *testing.T, opt *BuilderOpts) {
+	b, err := New(ioutil.Discard, opt)
 	if err != nil {
 		t.Fatalf("error creating builder: %v", err)
 	}
