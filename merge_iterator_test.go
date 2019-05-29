@@ -198,6 +198,10 @@ func (m *testIterator) Close() error {
 	return nil
 }
 
+func (m *testIterator) Exists(key []byte) (bool, error) {
+	return false, nil
+}
+
 func TestMergeFunc(t *testing.T) {
 	tests := []struct {
 		desc  string
