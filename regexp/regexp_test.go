@@ -162,6 +162,61 @@ func TestRegexp(t *testing.T) {
 			isMatch:  false,
 			canMatch: false,
 		},
+		// basic case insensitive match literals
+		{
+			query:    `(?i)mArTy`,
+			seq:      []byte{'m', 'a', 'r', 't', 'y'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		{
+			query:    `(?i)marty`,
+			seq:      []byte{'m', 'A', 'r', 'T', 'y'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		// case insensitive character class
+		{
+			query:    `(?i)[d-f]*`,
+			seq:      []byte{'D', 'e', 'e', 'F'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		// case insensitive, with case sensitive pattern in the middle
+		{
+			query:    `(?i)[d-f]*(?-i:m)wow`,
+			seq:      []byte{'D', 'e', 'e', 'F', 'm', 'W', 'o', 'W'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		// (?i)caseless(?-i)cased
+		{
+			query:    `(?i)[d-f]*(?-i)wOw`,
+			seq:      []byte{'D', 'e', 'e', 'F', 'w', 'O', 'w'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		// from: https://docs.rs/crate/regex-syntax/0.2.4/source/src/lib.rs
+		// `(?i)[^x]` really should match any character sans `x` and `X`, but if `[^x]` is negated
+		// before being case folded, you'll end up matching any character.
+		{
+			query:    `(?i)[^x]`,
+			seq:      []byte{'a'},
+			isMatch:  true,
+			canMatch: true,
+		},
+		{
+			query:    `(?i)[^x]`,
+			seq:      []byte{'x'},
+			isMatch:  false,
+			canMatch: false,
+		},
+		{
+			query:    `(?i)[^x]`,
+			seq:      []byte{'X'},
+			isMatch:  false,
+			canMatch: false,
+		},
 	}
 
 	for _, test := range tests {
