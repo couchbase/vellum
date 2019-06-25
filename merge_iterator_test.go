@@ -31,12 +31,12 @@ func TestMergeIterator(t *testing.T) {
 		{
 			desc: "two non-empty iterators with no duplicate keys",
 			in: []map[string]uint64{
-				map[string]uint64{
+				{
 					"a": 1,
 					"c": 3,
 					"e": 5,
 				},
-				map[string]uint64{
+				{
 					"b": 2,
 					"d": 4,
 					"f": 6,
@@ -57,12 +57,12 @@ func TestMergeIterator(t *testing.T) {
 		{
 			desc: "two non-empty iterators with duplicate keys summed",
 			in: []map[string]uint64{
-				map[string]uint64{
+				{
 					"a": 1,
 					"c": 3,
 					"e": 5,
 				},
-				map[string]uint64{
+				{
 					"a": 2,
 					"c": 4,
 					"e": 6,
@@ -85,13 +85,13 @@ func TestMergeIterator(t *testing.T) {
 		{
 			desc: "non-working example",
 			in: []map[string]uint64{
-				map[string]uint64{
+				{
 					"mon":   2,
 					"tues":  3,
 					"thurs": 5,
 					"tye":   99,
 				},
-				map[string]uint64{
+				{
 					"bold": 25,
 					"last": 1,
 					"next": 500,

@@ -18,7 +18,7 @@ import (
 	"bytes"
 )
 
-// Iterator represents a means of visity key/value pairs in order.
+// Iterator represents a means of visiting key/value pairs in order.
 type Iterator interface {
 
 	// Current() returns the key/value pair currently pointed to.
