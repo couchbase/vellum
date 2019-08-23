@@ -44,12 +44,7 @@ var fuzzyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		lb, err := levenshtein.NewLevenshteinAutomatonBuilder(uint8(distance), false)
-		if err != nil {
-			return err
-		}
-
-		fuzzy, err := lb.BuildDfa(query, uint8(distance))
+		fuzzy, err := levenshtein.New(query, distance)
 		if err != nil {
 			return err
 		}

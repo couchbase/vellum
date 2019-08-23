@@ -1,4 +1,4 @@
-//  Copyright (c) 2018 Couchbase, Inc.
+//  Copyright (c) 2017 Couchbase, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,32 @@
 
 package levenshtein
 
-import (
-	"testing"
-)
+import "fmt"
 
-func TestLevenshtein2(t *testing.T) {
-	dfaBuilder := withMaxStates(2)
-	dfaBuilder.addState(0, 1, Exact{d: 1})
-	dfaBuilder.addState(1, 0, Exact{d: 0})
-	dfaBuilder.setInitialState(1)
-	_ = dfaBuilder.build(1)
+type statesStack []state
+
+func (s statesStack) String() string {
+	rv := ""
+	for i := 0; i < len(s); i++ {
+		matchStr := ""
+		if s[i].match {
+			matchStr = " (MATCH) "
+		}
+		rv += fmt.Sprintf("state %d%s:\n%v\n", i, matchStr, s[i])
+	}
+	return rv
+}
+
+type intsStack [][]int
+
+func (s intsStack) Push(v []int) intsStack {
+	return append(s, v)
+}
+
+func (s intsStack) Pop() (intsStack, []int) {
+	l := len(s)
+	if l < 1 {
+		return s, nil
+	}
+	return s[:l-1], s[l-1]
 }
