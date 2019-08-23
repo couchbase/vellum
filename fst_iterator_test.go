@@ -550,7 +550,12 @@ func TestFuzzySearch(t *testing.T) {
 		t.Fatalf("error loading set: %v", err)
 	}
 
-	fuzzy, err := levenshtein.New("tue", 1)
+	lb, err := levenshtein.NewLevenshteinAutomatonBuilder(uint8(1), false)
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+
+	fuzzy, err := lb.BuildDfa("tue", 1)
 	if err != nil {
 		t.Fatalf("error building levenshtein automaton: %v", err)
 	}
