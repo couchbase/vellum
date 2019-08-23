@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package levenshtein2
+package levenshtein
 
 import (
 	"testing"
-
-	"github.com/couchbase/vellum/levenshtein"
 )
 
 func BenchmarkNewEvalEditDistance1(b *testing.B) {
@@ -80,38 +78,6 @@ func BenchmarkNewEditDistance2(b *testing.B) {
 
 		if !dfa.IsMatch(state) {
 			b.Errorf("expected isMatch %t, got %t", true, !dfa.IsMatch(state))
-		}
-	}
-}
-
-func BenchmarkOlderEditDistance1(b *testing.B) {
-	query := "coucibase"
-	for i := 0; i < b.N; i++ {
-		l, _ := levenshtein.New("couchbase", 1)
-
-		s := l.Start()
-		for _, b := range []byte(query) {
-			s = l.Accept(s, b)
-		}
-
-		if !l.IsMatch(s) {
-			b.Errorf("expected isMatch %t, got %t", true, l.IsMatch(s))
-		}
-	}
-}
-
-func BenchmarkOlderEditDistance2(b *testing.B) {
-	query := "couchbasefts"
-	for i := 0; i < b.N; i++ {
-		l, _ := levenshtein.New("couchbases", 2)
-
-		s := l.Start()
-		for _, b := range []byte(query) {
-			s = l.Accept(s, b)
-		}
-
-		if !l.IsMatch(s) {
-			b.Errorf("expected isMatch %t, got %t", true, l.IsMatch(s))
 		}
 	}
 }
