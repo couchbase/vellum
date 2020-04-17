@@ -32,8 +32,6 @@ func TestRoundTripSimple(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -52,7 +50,7 @@ func TestRoundTripSimple(t *testing.T) {
 
 	err = b.Close()
 	if err != nil {
-		t.Fatalf("err closing: %v", err)
+		t.Fatalf("error closing: %v", err)
 	}
 
 	fst, err := Open(f.Name())
@@ -163,8 +161,6 @@ func TestRoundTripThousand(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -237,8 +233,6 @@ func TestRoundTripEmpty(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -296,8 +290,6 @@ func TestRoundTripEmptyString(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -363,8 +355,6 @@ func TestRoundTripEmptyStringAndOthers(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -437,8 +427,6 @@ func TestMerge(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -457,7 +445,7 @@ func TestMerge(t *testing.T) {
 
 	err = b.Close()
 	if err != nil {
-		t.Fatalf("err closing: %v", err)
+		t.Fatalf("error closing: %v", err)
 	}
 
 	smallSample2 := map[string]uint64{
@@ -477,8 +465,6 @@ func TestMerge(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f2.Name())
 		if err != nil {
 			t.Fatal(err)
@@ -497,7 +483,7 @@ func TestMerge(t *testing.T) {
 
 	err = b.Close()
 	if err != nil {
-		t.Fatalf("err closing: %v", err)
+		t.Fatalf("error closing: %v", err)
 	}
 
 	// now open them both up
@@ -541,8 +527,6 @@ func TestMerge(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	}()
-	defer func() {
 		err = os.Remove(f3.Name())
 		if err != nil {
 			t.Fatal(err)
