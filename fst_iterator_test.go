@@ -667,3 +667,30 @@ func TestRegexpSearch(t *testing.T) {
 		t.Errorf("with start key t, end key u, expected %v, got: %v", want, got)
 	}
 }
+
+func TestIssue32(t *testing.T) {
+	var buf bytes.Buffer
+	b, err := New(&buf, nil)
+	if err != nil {
+		t.Fatalf("error creating builder: %v", err)
+	}
+	err = b.Insert(bytes.Repeat([]byte{'a'}, 1000000), 0)
+	if err != nil {
+		t.Fatalf("error inserting large key: %v", err)
+	}
+	err = b.Close()
+	if err != nil {
+		t.Fatalf("error closing: %v", err)
+	}
+	fst, err := Load(buf.Bytes())
+	if err != nil {
+		t.Fatalf("error loading set: %v", err)
+	}
+	itr, err := fst.Iterator(nil, nil)
+	for err == nil {
+		err = itr.Next()
+	}
+	if err != ErrIteratorDone {
+		t.Errorf("iterator error: %v", err)
+	}
+}
