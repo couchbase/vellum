@@ -1,5 +1,9 @@
 # ![vellum](docs/logo.png) vellum
 
+# NOTE: active development of the vellum library has moved to [https://github.com/blevesearch/vellum](https://github.com/blevesearch/vellum)
+
+This repository will remain as is to support previous Couchbase builds.
+
 [![Tests](https://github.com/couchbase/vellum/workflows/Tests/badge.svg?branch=master&event=push)](https://github.com/couchbase/vellum/actions?query=workflow%3ATests+event%3Apush+branch%3Amaster)
 [![Coverage Status](https://coveralls.io/repos/github/couchbase/vellum/badge.svg?branch=master)](https://coveralls.io/github/couchbase/vellum?branch=master)
 [![GoDoc](https://godoc.org/github.com/couchbase/vellum?status.svg)](https://godoc.org/github.com/couchbase/vellum)
